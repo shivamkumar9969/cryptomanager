@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,17 +19,13 @@ export default function LoginPage() {
     setError("");
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        `${baseUrl}/api/auth/login`,
         {
           email: form.email,
           password: form.password,
         }
       );
-
-      // Store token on success
       localStorage.setItem("token", res.data.token);
-
-      // Redirect to dashboard
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.message || "Login failed");
@@ -64,6 +62,15 @@ export default function LoginPage() {
           Login
         </button>
       </form>
+      <p className="mt-6 text-center text-gray-400">
+        Don't have an account?{" "}
+        <Link
+          href="/register"
+          className="text-yellow-400 hover:underline font-medium"
+        >
+          Register
+        </Link>
+      </p>
     </div>
   );
 }

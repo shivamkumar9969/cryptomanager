@@ -6,6 +6,7 @@ const connectDB = require('./config/db')
 const apiRoutes = require("./routes/api");
 const portfolioRoutes = require("./routes/portfolioRoutes");
 const apiKeysRoutes = require("./routes/apiKeysRoutes");
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -21,9 +22,9 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/keys", apiKeysRoutes);
 app.use("/api/notifications", require("./routes/notificationsRoutes"));
 app.use("/api/orders", require("./routes/ordersRoutes"));
-const dashboardRoutes = require('./routes/dashboardRoutes');
+app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/dashboard', dashboardRoutes);
-
+app.use("/api/settings", require("./routes/settingsRoutes"));
 module.exports = app;
 
 

@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -16,7 +18,8 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, form);
+      console.log(baseUrl);
+      await axios.post(`${baseUrl}/api/auth/register`, form);
       router.push("/login");
     } catch (err: any) {
       setError(err.response?.data?.message || "Registration failed");

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import axios from "axios";
+const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 interface UserProfile {
   name: string;
@@ -15,16 +17,19 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    // TODO: Replace with call to your backend to fetch profile
-    const fakeData: UserProfile = {
-      name: "John Doe",
-      email: "john@example.com",
-      createdAt: "2023-10-10T12:00:00Z",
-      totalTrades: 248,
-      winRate: 63.5,
-      exchangesConnected: 2,
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${baseUrl}/api/user/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setProfile(res.data);
+      } catch (err) {
+        setProfile(null);
+      }
     };
-    setProfile(fakeData);
+
+    fetchProfile();
   }, []);
 
   if (!profile) {
@@ -65,29 +70,7 @@ export default function ProfilePage() {
             Edit Profile / Settings
           </Link>
         </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-10">
-        <div className="bg-gray-800 p-5 rounded-xl shadow text-center">
-          <p className="text-gray-400 text-sm">Total Trades</p>
-          <p className="text-2xl font-bold text-yellow-400">
-            {profile.totalTrades}
-          </p>
-        </div>
-        <div className="bg-gray-800 p-5 rounded-xl shadow text-center">
-          <p className="text-gray-400 text-sm">Win Rate</p>
-          <p className="text-2xl font-bold text-green-400">
-            {profile.winRate}%
-          </p>
-        </div>
-        <div className="bg-gray-800 p-5 rounded-xl shadow text-center">
-          <p className="text-gray-400 text-sm">Connected Exchanges</p>
-          <p className="text-2xl font-bold text-blue-400">
-            {profile.exchangesConnected}
-          </p>
-        </div>
-      </div>
+      </div>      
     </div>
   );
 }

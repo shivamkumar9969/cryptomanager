@@ -1,4 +1,3 @@
-// models/User.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -9,13 +8,21 @@ const apiKeySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Add a sub-schema for user settings
+const settingsSchema = new mongoose.Schema({
+  twoFactorAuth: { type: Boolean, default: false },
+  theme: { type: String, enum: ["light", "dark"], default: "light" }
+}, { _id: false });
+
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   apiKeys: [apiKeySchema],
+  settings: settingsSchema,  
 }, { timestamps: true });
 
+// Hash password before saving
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
@@ -23,7 +30,7 @@ UserSchema.pre('save', async function (next) {
   next();
 });
 
-// Add this static method to fetch Binance keys for a user by userId
+// Get Binance Keys
 UserSchema.statics.getBinanceKeys = async function(userId) {
   const user = await this.findById(userId).select('apiKeys').lean();
   if (!user || !user.apiKeys) return null;
@@ -35,6 +42,7 @@ UserSchema.statics.getBinanceKeys = async function(userId) {
   };
 };
 
+// Get CoinDCX Keys
 UserSchema.statics.getCoindcxKeys = async function(userId) {
   const user = await this.findById(userId).select('apiKeys').lean();
   if (!user || !user.apiKeys) return null;

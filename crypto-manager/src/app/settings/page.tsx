@@ -1,167 +1,279 @@
 "use client";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+const SECTIONS = ["Profile", "Change Password", "Preferences"] as const;
+type Section = typeof SECTIONS[number];
 
 export default function SettingsPage() {
-    const [form, setForm] = useState({
-        name: "John Doe", // Replace with actual user info from backend
-        email: "john@example.com",
+    const [currentSection, setCurrentSection] = useState<Section>("Profile");
+
+    const [form, setForm] = useState({ name: "", email: "" });
+    const [passwordForm, setPasswordForm] = useState({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
-        twoFA: false,
-        theme: "dark",
-        emailNotifications: true,
     });
+    const [settings, setSettings] = useState({
+        twoFactorAuth: false,
+        darkMode: false,
+    });
+    const [loading, setLoading] = useState(true);
+    const [message, setMessage] = useState("");
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        const { name, value, type } = e.target;
-        if (type === "checkbox" && "checked" in e.target) {
-            const checked = (e.target as HTMLInputElement).checked;
-            setForm((prev) => ({
-                ...prev,
-                [name]: checked,
-            }));
-        } else {
-            setForm((prev) => ({
-                ...prev,
-                [name]: value,
-            }));
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const [profileRes, settingsRes] = await Promise.all([
+                    axios.get(`${baseUrl}/api/user/profile`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                    axios.get(`${baseUrl}/api/settings`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                ]);
+                setForm({ name: profileRes.data.name, email: profileRes.data.email });
+                setSettings({
+                    twoFactorAuth: settingsRes.data.twoFactorAuth,
+                    darkMode: settingsRes.data.darkMode,
+                });
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+    };
+
+    const handleProfileSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem("token");
+            await axios.put(`${baseUrl}/api/user/profile`, form, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setMessage("Profile updated successfully!");
+        } catch (err: any) {
+            setMessage(err.response?.data?.message || "Profile update failed");
         }
     };
 
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        alert("Settings saved! (Integrate API to update in backend)");
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            return setMessage("New passwords do not match!");
+        }
+        try {
+            const token = localStorage.getItem("token");
+            await axios.put(`${baseUrl}/api/user/change-password`, passwordForm, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setMessage("Password changed successfully!");
+            setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        } catch (err: any) {
+            setMessage(err.response?.data?.message || "Password update failed");
+        }
     };
 
+    const handleSettingToggle = async (key: "twoFactorAuth" | "darkMode") => {
+        const newValue = !settings[key];
+        setSettings({ ...settings, [key]: newValue });
+
+        try {
+            const token = localStorage.getItem("token");
+            await axios.put(
+                `${baseUrl}/api/settings`,
+                { [key]: newValue },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setMessage(`${key === "twoFactorAuth" ? "Two-Factor Auth" : "Dark Mode"} updated`);
+        } catch (err: any) {
+            setMessage(err.response?.data?.message || "Failed to update setting");
+        }
+    };
+
+    if (loading)
+        return <div className="flex justify-center items-center h-screen text-gray-400">Loading...</div>;
+
+    const SidebarItem = ({ name }: { name: Section }) => (
+        <button
+            onClick={() => setCurrentSection(name)}
+            className={`block w-full text-left px-6 py-3 rounded-md mb-2 transition ${currentSection === name
+                    ? "bg-yellow-500 text-black font-semibold"
+                    : "text-gray-300 hover:bg-yellow-600 hover:text-black"
+                }`}
+
+        >
+            {name}
+        </button>
+    );
+
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
+        <div className="flex min-h-screen bg-gray-900 text-white">
+            <aside className="w-60 bg-gray-800 p-6 flex flex-col">
+                <h1 className="text-yellow-400 text-xl font-bold mb-8">Settings</h1>
+                {SECTIONS.map((section) => (
+                    <SidebarItem key={section} name={section} />
+                ))}
+            </aside>
 
-            <form
-                onSubmit={handleSubmit}
-                className="bg-gray-800 rounded-xl p-6 shadow space-y-6"
-            >
-                {/* --- Profile Info --- */}
-                <div>
-                    <h2 className="text-xl font-semibold mb-4 text-yellow-400">Profile Info</h2>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-gray-300 mb-1">Name</label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={form.name}
-                                onChange={handleChange}
-                                className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-gray-300 mb-1">Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
-                            />
-                        </div>
+            <main className="flex-1 overflow-y-auto p-8 max-w-4xl w-full">
+                {message && (
+                    <div className="mb-6 p-4 bg-yellow-500 text-gray-900 rounded shadow font-medium">
+                        {message}
                     </div>
-                </div>
+                )}
 
-                {/* --- Security --- */}
-                <div>
-                    <h2 className="text-xl font-semibold mb-4 text-yellow-400">Security</h2>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-gray-300 mb-1">Current Password</label>
-                            <input
-                                type="password"
-                                name="currentPassword"
-                                value={form.currentPassword}
-                                onChange={handleChange}
-                                className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-gray-300 mb-1">New Password</label>
-                            <input
-                                type="password"
-                                name="newPassword"
-                                value={form.newPassword}
-                                onChange={handleChange}
-                                className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
-                            />
-                        </div>
-                        <div className="sm:col-span-2">
-                            <label className="block text-gray-300 mb-1">Confirm Password</label>
-                            <input
-                                type="password"
-                                name="confirmPassword"
-                                value={form.confirmPassword}
-                                onChange={handleChange}
-                                className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 mt-4">
-                        <input
-                            type="checkbox"
-                            name="twoFA"
-                            id="twoFA"
-                            checked={form.twoFA}
-                            onChange={handleChange}
-                            className="w-5 h-5 text-yellow-500 border-gray-700 bg-gray-900"
-                        />
-                        <label htmlFor="twoFA" className="text-gray-300">
-                            Enable Two-Factor Authentication (2FA)
-                        </label>
-                    </div>
-                </div>
-
-                {/* --- Preferences --- */}
-                <div>
-                    <h2 className="text-xl font-semibold mb-4 text-yellow-400">Preferences</h2>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-gray-300 mb-1">Theme</label>
-                            <select
-                                name="theme"
-                                value={form.theme}
-                                onChange={handleChange}
-                                className="w-full p-2 rounded bg-gray-900 border border-gray-700 text-white"
+                {currentSection === "Profile" && (
+                    <section className="space-y-6">
+                        <h2 className="text-3xl font-bold mb-6 text-yellow-400 border-b border-yellow-600 pb-2">
+                            Profile Information
+                        </h2>
+                        <form onSubmit={handleProfileSubmit} className="space-y-6">
+                            <div>
+                                <label className="block mb-2 text-sm font-medium text-gray-400" htmlFor="name">
+                                    Name
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    id="name"
+                                    value={form.name}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:outline-yellow-400"
+                                />
+                            </div>
+                            <div>
+                                <label className="block mb-2 text-sm font-medium text-gray-400" htmlFor="email">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    id="email"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:outline-yellow-400"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full bg-yellow-500 hover:bg-yellow-600 rounded-lg py-3 font-semibold text-gray-900 transition"
                             >
-                                <option value="dark">Dark Mode</option>
-                                <option value="light">Light Mode</option>
-                            </select>
-                        </div>
-                        <div className="flex items-center gap-3 mt-6 sm:mt-0">
-                            <input
-                                type="checkbox"
-                                name="emailNotifications"
-                                id="emailNotifications"
-                                checked={form.emailNotifications}
-                                onChange={handleChange}
-                                className="w-5 h-5 text-yellow-500 border-gray-700 bg-gray-900"
-                            />
-                            <label htmlFor="emailNotifications" className="text-gray-300">
-                                Email Notifications
-                            </label>
-                        </div>
-                    </div>
-                </div>
+                                Save Profile
+                            </button>
+                        </form>
+                    </section>
+                )}
 
-                <button
-                    type="submit"
-                    className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-6 py-2 rounded-lg font-semibold transition"
-                >
-                    Save Settings
-                </button>
-            </form>
+                {currentSection === "Change Password" && (
+                    <section className="space-y-6">
+                        <h2 className="text-3xl font-bold mb-6 text-yellow-400 border-b border-yellow-600 pb-2">
+                            Change Password
+                        </h2>
+                        <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                            <div>
+                                <label
+                                    className="block mb-2 text-sm font-medium text-gray-400"
+                                    htmlFor="currentPassword"
+                                >
+                                    Current Password
+                                </label>
+                                <input
+                                    type="password"
+                                    name="currentPassword"
+                                    id="currentPassword"
+                                    value={passwordForm.currentPassword}
+                                    onChange={handlePasswordChange}
+                                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:outline-yellow-400"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    className="block mb-2 text-sm font-medium text-gray-400"
+                                    htmlFor="newPassword"
+                                >
+                                    New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    name="newPassword"
+                                    id="newPassword"
+                                    value={passwordForm.newPassword}
+                                    onChange={handlePasswordChange}
+                                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:outline-yellow-400"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    className="block mb-2 text-sm font-medium text-gray-400"
+                                    htmlFor="confirmPassword"
+                                >
+                                    Confirm Password
+                                </label>
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    id="confirmPassword"
+                                    value={passwordForm.confirmPassword}
+                                    onChange={handlePasswordChange}
+                                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:outline-yellow-400"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full bg-yellow-500 hover:bg-yellow-600 rounded-lg py-3 font-semibold text-gray-900 transition"
+                            >
+                                Update Password
+                            </button>
+                        </form>
+                    </section>
+                )}
+
+                {currentSection === "Preferences" && (
+                    <section className="space-y-6">
+                        <h2 className="text-3xl font-bold mb-6 text-yellow-400 border-b border-yellow-600 pb-2">
+                            Preferences
+                        </h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <label className="text-gray-300 font-medium" htmlFor="twoFactorAuth">
+                                Two-Factor Authentication
+                            </label>
+                            <input
+                                id="twoFactorAuth"
+                                type="checkbox"
+                                checked={settings.twoFactorAuth}
+                                onChange={() => handleSettingToggle("twoFactorAuth")}
+                                className="h-6 w-6 rounded border-gray-600 bg-gray-800 text-yellow-500 focus:ring-yellow-400"
+                            />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <label className="text-gray-300 font-medium" htmlFor="darkMode">
+                                Dark Mode
+                            </label>
+                            <input
+                                id="darkMode"
+                                type="checkbox"
+                                checked={settings.darkMode}
+                                onChange={() => handleSettingToggle("darkMode")}
+                                className="h-6 w-6 rounded border-gray-600 bg-gray-800 text-yellow-500 focus:ring-yellow-400"
+                            />
+                        </div>
+                    </section>
+                )}
+            </main>
         </div>
     );
 }
