@@ -60,11 +60,10 @@ export default function Navbar() {
           <Link
             key={href}
             href={href}
-            className={`transition ${
-              pathname === href
+            className={`transition ${pathname === href
                 ? "text-yellow-400 font-semibold"
                 : "text-gray-300 hover:text-yellow-400"
-            }`}
+              }`}
           >
             {label}
           </Link>
@@ -82,12 +81,29 @@ export default function Navbar() {
 
         {/* Profile Dropdown (Click Toggle) */}
         <div className="relative" ref={dropdownRef}>
-          <div
-            onClick={() => setProfileOpen((prev) => !prev)}
-            className="w-9 h-9 rounded-full bg-yellow-500 flex items-center justify-center font-bold text-gray-900 cursor-pointer"
-          >
-            J
-          </div>
+         <div
+  onClick={() => setProfileOpen((prev) => !prev)}
+  className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center cursor-pointer"
+  role="button"
+  aria-label="Toggle profile menu"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-6 w-6 text-indigo-400"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M5.121 17.804A10.05 10.05 0 0112 15c2.485 0 4.766.992 6.379 2.604M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+    />
+  </svg>
+</div>
+
+
           {profileOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
               <Link
@@ -133,11 +149,10 @@ export default function Navbar() {
               key={href}
               href={href}
               onClick={() => setIsMobileOpen(false)}
-              className={`px-6 py-3 border-b border-gray-800 ${
-                pathname === href
+              className={`px-6 py-3 border-b border-gray-800 ${pathname === href
                   ? "text-yellow-400 font-semibold"
                   : "text-gray-300 hover:text-yellow-400"
-              }`}
+                }`}
             >
               {label}
             </Link>
