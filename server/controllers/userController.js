@@ -1,15 +1,50 @@
 //contollers/UserContoller
 const User = require("../models/User");
+const binanceService = require("../services/binanceService");
+const coindcxService = require("../services/coindcxService");
+
+async function getCoinDCXUserInfo(apiKey, apiSecret) {
+  try {
+    const data = await coindcxService.getUserInfo(apiKey, apiSecret);
+    return data; 
+  } catch (err) {
+    console.error("CoinDCX error:", err.message);
+    return null; 
+  }
+}
+
 exports.getProfile = async (req, res) => {
   try {
-    console.log(req);
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+
+    let coindcxUserInfo = null;
+    const coindcxKey = user.apiKeys.find((k) => k.exchange === "coindcx");
+    if (coindcxKey) {
+      const apiKey = coindcxKey.apiKey;
+      const apiSecret = coindcxKey.apiSecret;
+      coindcxUserInfo = await getCoinDCXUserInfo(apiKey, apiSecret);
+    }
+     res.json({
+      user,
+      coindcxUserInfo, 
+    })
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
+
+
+// exports.getProfile = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.id).select("-password");
+//     if (!user) return res.status(404).json({ message: "User not found" });
+//     res.json(user);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 
 // Update profile (name/email)
 exports.updateProfile = async (req, res) => {
@@ -46,4 +81,5 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 

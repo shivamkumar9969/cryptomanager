@@ -31,6 +31,29 @@ async function getAccountInfo(apiKey, apiSecret) {
   }
 }
 
+async function getUserInfo(apiKey, apiSecret) {
+  try {
+    const timestamp = Math.floor(Date.now());
+    const body = { timestamp };
+    const payload = Buffer.from(JSON.stringify(body)).toString();
+    const signature = crypto.createHmac('sha256', apiSecret).update(payload).digest('hex');
+
+    const res = await axios.post(`${COINDCX_BASE_URL}/exchange/v1/users/info`, body, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-AUTH-APIKEY': apiKey,
+        'X-AUTH-SIGNATURE': signature
+      },
+      timeout: 500000,
+      httpsAgent: agent
+    });
+    return res.data;
+  } catch (err) {
+    const message = err.response?.data || err.message;
+    throw new Error(typeof message === 'string' ? message : JSON.stringify(message));
+  }
+}
+
 // Place order on CoinDCX
 async function placeOrder(apiKey, apiSecret, params) {
   try {
@@ -130,7 +153,6 @@ async function getPortfolioValueForUser(userId, getUserApiKeys) {
     );
 
     const balances = res.data;
-    console.log('coindcx blance:',balances);
     if (!balances || !Array.isArray(balances)) return null;
 
     const { getPriceUSD } = require("./priceService");
@@ -170,4 +192,5 @@ module.exports = {
   getAllOrders,
   cancelOrder,
   getPortfolioValueForUser,
+  getUserInfo,
 };

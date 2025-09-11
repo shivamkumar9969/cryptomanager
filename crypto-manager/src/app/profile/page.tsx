@@ -13,6 +13,14 @@ interface UserProfile {
   exchangesConnected?: number;
 }
 
+interface CoinDCXUserInfo {
+  coindcx_id: string;
+  first_name: string;
+  last_name: string;
+  mobile_number: string;
+  email: string;
+}
+
 type ApiKey = {
   _id: string;
   exchange: string;
@@ -27,6 +35,7 @@ const exchangesMeta: Record<string, { label: string; color: string; logo: string
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [coindcxUserInfo, setCoindcxUserInfo] = useState<CoinDCXUserInfo | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingKeys, setLoadingKeys] = useState(false);
@@ -44,7 +53,10 @@ export default function ProfilePage() {
         const res = await axios.get(`${baseUrl}/api/user/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setProfile(res.data);
+
+        // backend returns { user, coindcxUserInfo }
+        setProfile(res.data.user);
+        setCoindcxUserInfo(res.data.coindcxUserInfo || null);
       } catch {
         setErrorProfile("Failed to load profile");
         setProfile(null);
@@ -95,9 +107,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-gray-200 font-sans">
-      {/* Top bar ticker */}
-    
-
       <div className="p-8 max-w-6xl mx-auto">
         {/* Header */}
         <header className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -122,25 +131,48 @@ export default function ProfilePage() {
 
         {/* Stats cards */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-14">
-          <div className="bg-gray-900/60 backdrop-blur-md rounded-xl p-6 border border-yellow-600/40 shadow-xl hover:scale-105 transition">
+          <div className="bg-gray-900/60 rounded-xl p-6 border border-yellow-600/40 shadow-xl hover:scale-105 transition">
             <p className="text-3xl font-extrabold text-yellow-400">{totalTrades}</p>
             <p className="uppercase text-xs font-semibold text-gray-400 mt-2 tracking-widest">
               Total Trades
             </p>
           </div>
-          <div className="bg-gray-900/60 backdrop-blur-md rounded-xl p-6 border border-green-600/40 shadow-xl hover:scale-105 transition">
+          <div className="bg-gray-900/60 rounded-xl p-6 border border-green-600/40 shadow-xl hover:scale-105 transition">
             <p className="text-3xl font-extrabold text-green-400">{winRate.toFixed(2)}%</p>
             <p className="uppercase text-xs font-semibold text-gray-400 mt-2 tracking-widest">
               Win Rate
             </p>
           </div>
-          <div className="bg-gray-900/60 backdrop-blur-md rounded-xl p-6 border border-blue-600/40 shadow-xl hover:scale-105 transition">
+          <div className="bg-gray-900/60 rounded-xl p-6 border border-blue-600/40 shadow-xl hover:scale-105 transition">
             <p className="text-3xl font-extrabold text-blue-400">{exchangesConnected}</p>
             <p className="uppercase text-xs font-semibold text-gray-400 mt-2 tracking-widest">
               Exchanges
             </p>
           </div>
         </section>
+
+        {/* ✅ CoinDCX User Info (only if available) */}
+        {coindcxUserInfo && (
+          <section className="mb-14">
+            <h2 className="text-2xl font-semibold text-blue-400 mb-6 border-b border-blue-600 pb-2">
+              CoinDCX Account Info
+            </h2>
+            <div className="bg-gray-900/60 rounded-xl p-6 border border-blue-600/40 shadow-xl">
+              <p className="text-lg font-bold text-white mb-3">
+                {coindcxUserInfo.first_name} {coindcxUserInfo.last_name}
+              </p>
+              <p className="text-gray-400">
+                <span className="font-semibold text-gray-300">Email:</span> {coindcxUserInfo.email}
+              </p>
+              <p className="text-gray-400">
+                <span className="font-semibold text-gray-300">Mobile:</span> {coindcxUserInfo.mobile_number}
+              </p>
+              <p className="text-gray-400">
+                <span className="font-semibold text-gray-300">CoinDCX ID:</span> {coindcxUserInfo.coindcx_id}
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* API keys */}
         <section>
@@ -166,7 +198,7 @@ export default function ProfilePage() {
                 return (
                   <li
                     key={_id}
-                    className="relative bg-gray-900/60 backdrop-blur-md rounded-xl p-5 border border-gray-700 shadow-lg hover:border-yellow-500 hover:scale-[1.02] transition"
+                    className="relative bg-gray-900/60 rounded-xl p-5 border border-gray-700 shadow-lg hover:border-yellow-500 hover:scale-[1.02] transition"
                   >
                     <div
                       className={`bg-gradient-to-tr ${meta.color} w-14 h-14 rounded-full flex items-center justify-center font-bold text-black shadow-md text-lg absolute -top-6 left-4`}
