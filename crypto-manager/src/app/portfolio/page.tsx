@@ -47,28 +47,35 @@ export default function PortfolioPage() {
         const results: ExchangeData[] = [];
 
         for (const ex of exchanges) {
-          const endpoint = ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
+          try {
+            const endpoint = ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
 
-          const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
 
-          const balancesArray = Array.isArray(res.data) ? res.data : res.data?.balances || [];
+            const balancesArray = Array.isArray(res.data) ? res.data : res.data?.balances || [];
 
-          const filtered = balancesArray
-            .map((b: RawBalance) => ({
-              asset: b.currency || b.asset || "",
-              free: (b.balance ?? b.free ?? 0).toString(),
-              locked: (b.locked_balance ?? b.locked ?? 0).toString(),
-              exchange: ex,
-            }))
-            .filter((b: Balance) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0);
+            const filtered = balancesArray
+              .map((b: RawBalance) => ({
+                asset: b.currency || b.asset || "",
+                free: (b.balance ?? b.free ?? 0).toString(),
+                locked: (b.locked_balance ?? b.locked ?? 0).toString(),
+                exchange: ex,
+              }))
+              .filter((b: Balance) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0);
 
 
-          results.push({ name: ex, balances: filtered });
+            results.push({ name: ex, balances: filtered });
+          } catch (err) {
+            console.error("Portfolio fetch error", err);
+          } finally {
+            setLoading(false);
+          }
         }
 
         setData(results);
+
       } catch (err) {
         console.error("Portfolio fetch error", err);
       } finally {
