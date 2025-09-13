@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState, useCallback } from "react";
+import axios  from "axios";
+
 
 type ApiKey = {
   _id: string;
@@ -102,7 +103,7 @@ export default function ApiKeysPage() {
     }
   }, []);
 
-  const fetchKeys = async () => {
+  const fetchKeys = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     setError("");
@@ -112,16 +113,20 @@ export default function ApiKeysPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setKeys(res.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to load API keys");
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError((err.response?.data as { message?: string })?.message || "Failed to load API keys");
+      } else {
+        setError("Failed to load API keys");
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (token) fetchKeys();
-  }, [token]);
+  }, [token, fetchKeys]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -151,8 +156,12 @@ export default function ApiKeysPage() {
       setForm({ exchange: "binance", apiKey: "", apiSecret: "" });
       setSuccess("API Key added successfully!");
       fetchKeys();
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to add API key");
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError((err.response?.data as { message?: string })?.message || "Failed to add API keys");
+      } else {
+        setError("Failed to add API keys");
+      }
     }
   };
 
@@ -170,8 +179,12 @@ export default function ApiKeysPage() {
       });
       setSuccess("API Key deleted.");
       fetchKeys();
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to delete API key");
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError((err.response?.data as { message?: string })?.message || "Failed to delete api key");
+      } else {
+        setError("Failed to load delete api key");
+      }
     }
   };
 

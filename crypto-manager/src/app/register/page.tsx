@@ -27,8 +27,12 @@ export default function RegisterPage() {
         password: form.password,
       });
       router.push("/login");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed");
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError((err.response?.data as { message?: string })?.message || "Failed to register");
+      } else {
+        setError("Failed to register");
+      }
     }
   };
 

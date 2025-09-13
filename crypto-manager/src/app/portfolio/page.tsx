@@ -16,12 +16,23 @@ interface ExchangeData {
   balances: Balance[];
 }
 
+type RawBalance = {
+  asset?: string;
+  free?: string | number;
+  locked?: string | number;
+  currency?: string;
+  balance?: string | number;
+  locked_balance?: string | number;
+};
+
 export default function PortfolioPage() {
   const [exchanges, setExchanges] = useState<string[]>(["Binance", "CoinDCX"]);
   const [data, setData] = useState<ExchangeData[]>([]);
   const [activeExchange, setActiveExchange] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -35,24 +46,24 @@ export default function PortfolioPage() {
       try {
         const results: ExchangeData[] = [];
 
-        for (let ex of exchanges) {
-          const endpoint =
-            ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
+        for (const ex of exchanges) {
+          const endpoint = ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
 
           const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
-          let balancesArray = Array.isArray(res.data) ? res.data : res.data?.balances || [];
+          const balancesArray = Array.isArray(res.data) ? res.data : res.data?.balances || [];
 
           const filtered = balancesArray
-            .map((b: any) => ({
-              asset: b.currency || b.asset,
+            .map((b: RawBalance) => ({
+              asset: b.currency || b.asset || "",
               free: (b.balance ?? b.free ?? 0).toString(),
               locked: (b.locked_balance ?? b.locked ?? 0).toString(),
               exchange: ex,
             }))
-            .filter((b: any) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0);
+            .filter((b: Balance) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0);
+
 
           results.push({ name: ex, balances: filtered });
         }

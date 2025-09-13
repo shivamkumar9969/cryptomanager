@@ -18,7 +18,7 @@ export default function TradingPage() {
     try {
       const token = localStorage.getItem("token");
       // Map frontend form fields to correct backend fields:
-      let payload: any;
+      let payload;
 
       if (activeExchange === "Binance") {
         payload = {
@@ -46,8 +46,13 @@ export default function TradingPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setFeedback("Order placed!");
-    } catch (err: any) {
-      setFeedback(err.response?.data?.message || "Order failed");
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setFeedback((err.response?.data as { message?: string })?.message || "Order Failed");
+      } else {
+        setFeedback("Order Failed");
+      }
+
     }
   };
 

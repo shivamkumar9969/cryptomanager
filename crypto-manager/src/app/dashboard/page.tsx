@@ -87,8 +87,12 @@ export default function DashboardPage() {
 
         setTotalBalance(total);
         setError(null);
-      } catch (err: any) {
-        setError(err?.response?.data?.error || err.message);
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          setError((err.response?.data as { message?: string })?.message || "Failed to summary");
+        } else {
+          setError("summary failed");
+        }
       } finally {
         setLoading(false);
       }
@@ -158,11 +162,10 @@ export default function DashboardPage() {
   const SidebarItem = ({ name }: { name: Section }) => (
     <button
       onClick={() => setCurrentSection(name)}
-      className={`block w-full text-left px-6 py-3 rounded-md mb-2 transition ${
-        currentSection === name
+      className={`block w-full text-left px-6 py-3 rounded-md mb-2 transition ${currentSection === name
           ? "bg-yellow-500 text-black font-semibold"
           : "text-gray-300 hover:bg-yellow-600 hover:text-black"
-      }`}
+        }`}
     >
       {name}
     </button>
@@ -206,9 +209,8 @@ export default function DashboardPage() {
                       {ex.name}
                     </h4>
                     <p
-                      className={`mt-2 font-semibold ${
-                        ex.connected ? "text-green-400" : "text-red-500"
-                      }`}
+                      className={`mt-2 font-semibold ${ex.connected ? "text-green-400" : "text-red-500"
+                        }`}
                     >
                       {ex.connected ? "Connected" : "Disconnected"}
                     </p>

@@ -65,8 +65,12 @@ export default function SettingsPage() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setMessage("Profile updated successfully!");
-        } catch (err: any) {
-            setMessage(err.response?.data?.message || "Profile update failed");
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setMessage((err.response?.data as { message?: string })?.message || "Profile update failed");
+            } else {
+                setMessage("Profile update failed");
+            }
         }
     };
 
@@ -82,8 +86,12 @@ export default function SettingsPage() {
             });
             setMessage("Password changed successfully!");
             setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-        } catch (err: any) {
-            setMessage(err.response?.data?.message || "Password update failed");
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setMessage((err.response?.data as { message?: string })?.message || "Password update failed");
+            } else {
+                setMessage("Password update failed");
+            }
         }
     };
 
@@ -99,8 +107,12 @@ export default function SettingsPage() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setMessage(`${key === "twoFactorAuth" ? "Two-Factor Auth" : "Dark Mode"} updated`);
-        } catch (err: any) {
-            setMessage(err.response?.data?.message || "Failed to update setting");
+        } catch (err) {
+             if (axios.isAxiosError(err)) {
+                setMessage((err.response?.data as { message?: string })?.message || "Failed to update setting");
+            } else {
+                setMessage("Failed to update setting");
+            }
         }
     };
 
@@ -111,8 +123,8 @@ export default function SettingsPage() {
         <button
             onClick={() => setCurrentSection(name)}
             className={`block w-full text-left px-6 py-3 rounded-md mb-2 transition ${currentSection === name
-                    ? "bg-yellow-500 text-black font-semibold"
-                    : "text-gray-300 hover:bg-yellow-600 hover:text-black"
+                ? "bg-yellow-500 text-black font-semibold"
+                : "text-gray-300 hover:bg-yellow-600 hover:text-black"
                 }`}
 
         >
