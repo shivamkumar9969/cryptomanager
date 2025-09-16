@@ -70,6 +70,10 @@ export default function AuthTogglePage() {
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    if (!loginForm.email.trim() || !loginForm.password.trim()) {
+      setError("Please enter both email and password.");
+      return; // stop the request
+    }
     try {
       console.log('base url: ', baseUrl);
       const res = await axios.post(`${baseUrl}/api/auth/login`, {
@@ -257,12 +261,13 @@ export default function AuthTogglePage() {
           {/* Login */}
           <form
             onSubmit={handleLoginSubmit}
+            
             className={`flex flex-col justify-center h-full px-16 py-20 bg-gray-900 transition-transform duration-500 ease-in-out ${
               view !== "login"
                 ? "translate-x-full opacity-0 pointer-events-none"
                 : "translate-x-0 opacity-100 pointer-events-auto"
             }`}
-            noValidate
+            noValidate={false}
           >
             <h2 className="text-3xl font-extrabold text-yellow-400 mb-8">
               Login to Your Account
@@ -274,7 +279,7 @@ export default function AuthTogglePage() {
               value={loginForm.email}
               onChange={handleLoginChange}
               required
-              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 placeholder-gray-400 text-white mb-6"
+              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 placeholder-gray-400 text-white mb-6 caret-yellow-400"
             />
             <div className="relative mb-3">
               <input
@@ -284,7 +289,7 @@ export default function AuthTogglePage() {
                 value={loginForm.password}
                 onChange={handleLoginChange}
                 required
-                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 placeholder-gray-400 text-white pr-12"
+                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 placeholder-gray-400 text-white pr-12 caret-yellow-400"
               />
               <button
                 type="button"
@@ -331,7 +336,7 @@ export default function AuthTogglePage() {
               value={registerForm.name}
               onChange={handleRegisterChange}
               required
-              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6"
+              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6 caret-yellow-400"
             />
             <input
               type="email"
@@ -340,7 +345,7 @@ export default function AuthTogglePage() {
               value={registerForm.email}
               onChange={handleRegisterChange}
               required
-              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6"
+              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6 caret-yellow-400"
             />
             <div className="relative mb-6">
               <input
@@ -350,12 +355,12 @@ export default function AuthTogglePage() {
                 value={registerForm.password}
                 onChange={handleRegisterChange}
                 required
-                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white pr-12"
+                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white pr-12 caret-yellow-400"
               />
               <button
                 type="button"
                 onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 "
               >
                 {showRegisterPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -368,7 +373,7 @@ export default function AuthTogglePage() {
                 value={registerForm.confirmPassword}
                 onChange={handleRegisterChange}
                 required
-                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white pr-12"
+                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white pr-12 caret-yellow-400"
               />
               <button
                 type="button"
@@ -410,7 +415,7 @@ export default function AuthTogglePage() {
               onChange={handleOtpChange}
               required
               maxLength={6}
-              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6"
+              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6 caret-yellow-400"
             />
             {error && view === "otp" && (
               <p className="text-red-500 text-center mb-6">{error}</p>
@@ -441,7 +446,7 @@ export default function AuthTogglePage() {
               value={forgotEmail}
               onChange={(e) => setForgotEmail(e.target.value)}
               required
-              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6"
+              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6 caret-yellow-400"
             />
             {error && view === "forgot" && (
               <p className="text-red-500 text-center mb-6">{error}</p>
@@ -478,7 +483,7 @@ export default function AuthTogglePage() {
               value={resetEmail}
               onChange={(e) => setResetEmail(e.target.value)}
               required
-              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6"
+              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6 caret-yellow-400"
             />
             <input
               type="text"
@@ -486,7 +491,7 @@ export default function AuthTogglePage() {
               value={resetToken}
               onChange={(e) => setResetToken(e.target.value)}
               required
-              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6"
+              className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white mb-6 caret-yellow-400"
             />
             <div className="relative mb-6">
               <input
@@ -495,7 +500,7 @@ export default function AuthTogglePage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white pr-12"
+                className="w-full p-4 rounded-md bg-gray-800 border border-gray-700 text-white pr-12 caret-yellow-400"
               />
               <button
                 type="button"

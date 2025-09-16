@@ -48,13 +48,19 @@ export default function Navbar() {
 
   return (
     <nav className="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+
       {/* Brand */}
-      <Link
-        href="/"
-        className="text-yellow-400 font-bold text-xl tracking-wide hover:scale-105 transition"
-      >
-        Crypto Manager
+      <Link href="/" className="flex items-center space-x-2">
+        <img
+          src='/logo/ac2.png'
+          alt="Crypto Automation Logo"
+          className="w-8 h-8 object-contain"
+        />
+        <span className="text-yellow-400 font-bold text-xl tracking-wide hover:scale-105 transition">
+          Crypto Automation
+        </span>
       </Link>
+
 
       {/* Desktop Menu */}
       {isLoggedIn && (
@@ -63,11 +69,10 @@ export default function Navbar() {
             <Link
               key={href}
               href={href}
-              className={`transition ${
-                pathname === href
-                  ? "text-yellow-400 font-semibold"
-                  : "text-gray-300 hover:text-yellow-400"
-              }`}
+              className={`transition ${pathname === href
+                ? "text-yellow-400 font-semibold"
+                : "text-gray-300 hover:text-yellow-400"
+                }`}
             >
               {label}
             </Link>
@@ -154,11 +159,10 @@ export default function Navbar() {
               key={href}
               href={href}
               onClick={() => setIsMobileOpen(false)}
-              className={`px-6 py-3 border-b border-gray-800 ${
-                pathname === href
-                  ? "text-yellow-400 font-semibold"
-                  : "text-gray-300 hover:text-yellow-400"
-              }`}
+              className={`px-6 py-3 border-b border-gray-800 ${pathname === href
+                ? "text-yellow-400 font-semibold"
+                : "text-gray-300 hover:text-yellow-400"
+                }`}
             >
               {label}
             </Link>
