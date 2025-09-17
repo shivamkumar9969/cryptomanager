@@ -58,11 +58,11 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeExchange, setActiveExchange] = useState("All");
 
-  //const token = localStorage.getItem("token");
-  const selectedCurrency = localStorage.getItem("currency") || "USDT";
+  //const token = localStorage.getItem("token"); 
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const selectedCurrency = localStorage.getItem("currency") || "USDT";
     if (!token) {
       window.location.href = "/login";
       return;
