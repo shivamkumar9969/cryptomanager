@@ -126,65 +126,69 @@ async function cancelOrder(apiKey, apiSecret, orderId) {
   }
 }
 
-async function getPortfolioValueForUser(userId, getUserApiKeys) {
-  try {
-    const keys = await getUserApiKeys(userId, "coindcx");
-    if (!keys) return null;
 
+
+async function getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency = "USDT", agent = null) {
+  try {
     const timestamp = Math.floor(Date.now());
     const body = { timestamp };
     const payload = Buffer.from(JSON.stringify(body)).toString();
-    const signature = crypto.createHmac("sha256", keys.apiSecret)
-      .update(payload)
-      .digest("hex");
+    const signature = crypto.createHmac("sha256", apiSecret).update(payload).digest("hex");
 
-    const res = await axios.post(
-      `${COINDCX_BASE_URL}/exchange/v1/users/balances`,
-      body,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-AUTH-APIKEY": keys.apiKey,
-          "X-AUTH-SIGNATURE": signature,
-        },
-        timeout: 10000,
-        httpsAgent: agent,
-      }
-    );
-
-    const balances = res.data;
-    if (!balances || !Array.isArray(balances)) return null;
-
-    const { getPriceUSD } = require("./priceService");
-
-    let totalValue = 0;
-    const assets = [];
-
-    // Use correct CoinDCX fields: 'balance' (free), 'locked_balance'
-    for (const asset of balances) {
-      // asset.currency = symbol
-      const freeAmount = parseFloat(asset.balance ?? "0");
-      const lockedAmount = parseFloat(asset.locked_balance ?? "0");
-      const totalAmount = freeAmount + lockedAmount;
-
-      if (totalAmount > 0) {
-        const price = await getPriceUSD(asset.currency);
-        const value = totalAmount * price;
-        totalValue += value;
-        assets.push({
-          asset: asset.currency,
-          quantity: totalAmount,
-          value,
-        });
-      }
+    // Fetch balances
+    const res = await axios.post(`${COINDCX_BASE_URL}/exchange/v1/users/balances`, body, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-AUTH-APIKEY": apiKey,
+        "X-AUTH-SIGNATURE": signature,
+      },
+      timeout: 10000,
+      httpsAgent: agent,
+    });
+    const balances = res.data || [];
+    const marketsRes = await axios.get(`${COINDCX_BASE_URL}/exchange/v1/markets_details`);
+    const marketDetails = marketsRes.data;
+    const tickersRes = await axios.get(`${COINDCX_BASE_URL}/exchange/ticker`);
+    const priceMap = {};
+    for (const t of tickersRes.data) {
+      priceMap[t.market.toUpperCase()] = parseFloat(t.last_price);
     }
-
-    return { totalValue, assets };
+    const getPriceInSelectedCurrency = (asset) => {
+      const symbol = asset.toUpperCase();
+      let key = `${symbol}${selectedCurrency}`;
+      if (priceMap[key]) return priceMap[key];
+      if (selectedCurrency !== "USDT" && priceMap[`${symbol}USDT`] && priceMap[`USDT${selectedCurrency}`]) {
+        return priceMap[`${symbol}USDT`] * priceMap[`USDT${selectedCurrency}`];
+      }
+      if (priceMap[`${symbol}BTC`]) {
+        const btcToSelected = selectedCurrency === "BTC" ? 1 : priceMap[`BTC${selectedCurrency}`];
+        if (btcToSelected) return priceMap[`${symbol}BTC`] * btcToSelected;
+      }
+      return 0;
+    };
+    const portfolio = [];
+    for (const asset of balances) {
+      const freeQty = parseFloat(asset.balance ?? 0);
+      const lockedQty = parseFloat(asset.locked_balance ?? 0);
+      const totalQty = freeQty + lockedQty;
+      if (totalQty <= 0) continue;
+      const price = getPriceInSelectedCurrency(asset.currency);
+      portfolio.push({
+        asset: asset.currency,
+        free_quantity: freeQty,
+        locked_quantity: lockedQty,
+        quantity: totalQty,
+        price,
+        value: totalQty * price,
+      });
+    }
+    return portfolio;
   } catch (err) {
-    console.error("CoinDCX portfolio value error:", err.message || err);
-    return null;
+    console.error("CoinDCX portfolio error:", err.message || err);
+    return [];
   }
 }
+
 
 module.exports = {
   getAccountInfo,

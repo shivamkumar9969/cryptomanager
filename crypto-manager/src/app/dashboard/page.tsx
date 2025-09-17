@@ -58,6 +58,9 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeExchange, setActiveExchange] = useState("All");
 
+  //const token = localStorage.getItem("token");
+  const selectedCurrency = localStorage.getItem("currency") || "USDT";
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -71,21 +74,11 @@ export default function DashboardPage() {
           `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/summary`,
           {
             headers: { Authorization: `Bearer ${token}` },
+            params: { currency: selectedCurrency },
           }
         );
 
-        const { exchanges: exs, topAssets: assets, recentActivity: activity } = res.data;
-
-        setExchanges(Array.isArray(exs) ? exs : []);
-        setTopAssets(Array.isArray(assets) ? assets : []);
-        setRecentActivity(Array.isArray(activity) ? activity : []);
-        const total =
-          exs?.reduce(
-            (acc: number, ex: ExchangeStatus) => acc + (ex.balancesValue || 0),
-            0
-          ) || 0;
-
-        setTotalBalance(total);
+       console.log(res.data);
         setError(null);
       } catch (err) {
         if (axios.isAxiosError(err)) {
@@ -163,8 +156,8 @@ export default function DashboardPage() {
     <button
       onClick={() => setCurrentSection(name)}
       className={`block w-full text-left px-6 py-3 rounded-md mb-2 transition ${currentSection === name
-          ? "bg-yellow-500 text-black font-semibold"
-          : "text-gray-300 hover:bg-yellow-600 hover:text-black"
+        ? "bg-yellow-500 text-black font-semibold"
+        : "text-gray-300 hover:bg-yellow-600 hover:text-black"
         }`}
     >
       {name}

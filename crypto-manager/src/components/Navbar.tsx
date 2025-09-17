@@ -9,21 +9,39 @@ export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
 
-  // ✅ Read token on initial render
+  // Separate refs for dropdowns
+  const currencyRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const isLoggedIn = !!token;
 
+  const [selectedCurrency, setSelectedCurrency] = useState("USDT");
+
   useEffect(() => {
-    // Simulate unread notifications count (replace with API)
+    const savedCurrency = localStorage.getItem("currency");
+    if (savedCurrency) setSelectedCurrency(savedCurrency);
+  }, []);
+
+  const handleCurrencyChange = (currency: string) => {
+    setSelectedCurrency(currency);
+    localStorage.setItem("currency", currency);
+    setCurrencyOpen(false);
+  };
+
+  useEffect(() => {
     if (isLoggedIn) setUnreadCount(3);
   }, [isLoggedIn]);
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
+        setCurrencyOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setProfileOpen(false);
       }
     };
@@ -48,19 +66,13 @@ export default function Navbar() {
 
   return (
     <nav className="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-
       {/* Brand */}
       <Link href="/" className="flex items-center space-x-2">
-        <img
-          src='/logo/ac2.png'
-          alt="Crypto Automation Logo"
-          className="w-8 h-8 object-contain"
-        />
+        <img src='/logo/ac2.png' alt="Crypto Automation Logo" className="w-8 h-8 object-contain" />
         <span className="text-yellow-400 font-bold text-xl tracking-wide hover:scale-105 transition">
           Crypto Automation
         </span>
       </Link>
-
 
       {/* Desktop Menu */}
       {isLoggedIn && (
@@ -69,10 +81,7 @@ export default function Navbar() {
             <Link
               key={href}
               href={href}
-              className={`transition ${pathname === href
-                ? "text-yellow-400 font-semibold"
-                : "text-gray-300 hover:text-yellow-400"
-                }`}
+              className={`transition ${pathname === href ? "text-yellow-400 font-semibold" : "text-gray-300 hover:text-yellow-400"}`}
             >
               {label}
             </Link>
@@ -88,8 +97,39 @@ export default function Navbar() {
             )}
           </Link>
 
+          {/* Currency Selector */}
+          <div className="relative" ref={currencyRef}>
+            <button
+              className="px-3 py-1 border border-gray-700 rounded bg-gray-800 text-gray-300 hover:text-yellow-400"
+              onClick={() => {
+                setCurrencyOpen((prev) => !prev);
+                setProfileOpen(false); // close profile if currency clicked
+              }}
+            >
+              {selectedCurrency === "INR" && "₹ INR"}
+              {selectedCurrency === "USDT" && "$ USDT"}
+              {selectedCurrency === "BTC" && "₿ BTC"}
+            </button>
+
+            {currencyOpen && (
+              <div className="absolute mt-1 w-32 bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
+                {["INR", "USDT", "BTC"].map((cur) => (
+                  <div
+                    key={cur}
+                    className={`px-4 py-2 hover:bg-gray-700 cursor-pointer ${
+                      selectedCurrency === cur ? "text-yellow-400 font-semibold" : "text-gray-300"
+                    }`}
+                    onClick={() => handleCurrencyChange(cur)}
+                  >
+                    {cur === "INR" ? "₹ INR" : cur === "USDT" ? "$ USDT" : "₿ BTC"}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Profile Dropdown */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative" ref={profileRef}>
             <div
               onClick={() => setProfileOpen((prev) => !prev)}
               className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center cursor-pointer"
@@ -159,10 +199,9 @@ export default function Navbar() {
               key={href}
               href={href}
               onClick={() => setIsMobileOpen(false)}
-              className={`px-6 py-3 border-b border-gray-800 ${pathname === href
-                ? "text-yellow-400 font-semibold"
-                : "text-gray-300 hover:text-yellow-400"
-                }`}
+              className={`px-6 py-3 border-b border-gray-800 ${
+                pathname === href ? "text-yellow-400 font-semibold" : "text-gray-300 hover:text-yellow-400"
+              }`}
             >
               {label}
             </Link>
@@ -174,9 +213,7 @@ export default function Navbar() {
           >
             Notifications{" "}
             {unreadCount > 0 && (
-              <span className="bg-red-500 px-2 py-0.5 rounded-full text-xs">
-                {unreadCount}
-              </span>
+              <span className="bg-red-500 px-2 py-0.5 rounded-full text-xs">{unreadCount}</span>
             )}
           </Link>
           <Link

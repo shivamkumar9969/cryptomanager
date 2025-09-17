@@ -41,18 +41,28 @@ function mergeBalances(balancesFromExchanges) {
 }
 
 exports.dashboardSummary = async (req, res) => {
-  const userId = req.user.id;
   try {
-    // Get portfolio from Binance
-    const binancePortfolio = await binanceService.getPortfolioValueForUser(userId);
+    const userId = req.user.id;
+    const selectedCurrency = req.query.currency || "USDT";
 
-    // Get portfolio from CoinDCX
-    const coindcxPortfolio = await coindcxService.getPortfolioValueForUser(
-      userId,
-      getUserApiKeys
-    );
+    const user = await User.findById(userId);
+    let binancePortfolio = null;
+    let coindcxPortfolio = null;
 
-    // Merge top assets from both
+    const binanceKey = user.apiKeys.find((k) => k.exchange.toLowerCase() === "binance");
+    const coindcxKey = user.apiKeys.find((k) => k.exchange.toLowerCase() === "coindcx");
+    if (coindcxKey) {
+      const apiKey = coindcxKey.apiKey;
+      const apiSecret = coindcxKey.apiSecret;
+      coindcxPortfolio = await coindcxService.getPortfolioValueForUser(apiKey, apiSecret,selectedCurrency);
+
+    }
+    if (binanceKey) {
+      const apiKey = binanceKey.apiKey;
+      const apiSecret = binanceKey.apiSecret;
+      binancePortfolio = await binanceService.getPortfolioValueForUser(apiKey, apiSecret);
+    }
+
     const topAssets = mergeBalances([
       {
         exchange: "Binance",
@@ -64,7 +74,6 @@ exports.dashboardSummary = async (req, res) => {
       },
     ]);
 
-    // Mock recent activity, replace with real data if available
     const recentActivity = [
       {
         exchange: "Binance",
