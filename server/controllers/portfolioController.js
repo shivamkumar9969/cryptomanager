@@ -1,4 +1,4 @@
-//portfolioController.js
+// portfolioController.js
 const binanceService = require("../services/binanceService");
 const coindcxService = require("../services/coindcxService");
 const User = require("../models/User");
@@ -9,41 +9,35 @@ const decryptApiKey = (key) => key;
 exports.getBinanceBalances = async (req, res) => {
   try {
     const userId = req.user.id;
+    const selectedCurrency = req.query.currency || "USDT";
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const binanceKey = Array.isArray(user.apiKeys)
-      ? user.apiKeys.find((k) => k.exchange === "binance")
-      : undefined;
-
-    if (!binanceKey) return res.status(404).json({ message: "Binance API key not found" });
-
-    const apiKey = decryptApiKey(binanceKey.apiKey);
-    const apiSecret = decryptApiKey(binanceKey.apiSecret);
-
-    const data = await binanceService.getAccountInfo(apiKey, apiSecret);
-    res.json({ balances: data.balances });
+    let binancePortfolio = null;
+    const binanceKey = user.apiKeys.find((k) => k.exchange.toLowerCase() === "binance");
+    if (binanceKey) {
+      const apiKey = binanceKey.apiKey;
+      const apiSecret = binanceKey.apiSecret;
+      binancePortfolio = await binanceService.getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency);
+    }
+    res.json({ binance: binancePortfolio });
   } catch (err) {
     console.error("Binance error:", err.message);
     res.status(500).json({ message: "Failed to fetch Binance balances" });
   }
 };
 
-
 exports.getCoinDCXBalances = async (req, res) => {
   try {
     const userId = req.user.id;
+    const selectedCurrency = req.query.currency || "USDT";
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const coindcxKey = user.apiKeys.find((k) => k.exchange === "coindcx");
-    if (!coindcxKey) return res.status(404).json({ message: "CoinDCX API key not found" });
-
-    const apiKey = decryptApiKey(coindcxKey.apiKey);
-    const apiSecret = decryptApiKey(coindcxKey.apiSecret);
-
-    const data = await coindcxService.getAccountInfo(apiKey, apiSecret);
-    res.json({ balances: data });
+    let coindcxPortfolio = null;
+    const coindcxKey = user.apiKeys.find((k) => k.exchange.toLowerCase() === "coindcx");
+    if (coindcxKey) {
+      const apiKey = coindcxKey.apiKey;
+      const apiSecret = coindcxKey.apiSecret;
+      coindcxPortfolio = await coindcxService.getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency);
+    }
+    res.json({ coindcx: coindcxPortfolio });
   } catch (err) {
     console.error("CoinDCX error:", err.message);
     res.status(500).json({ message: "Failed to fetch CoinDCX balances" });
@@ -53,36 +47,57 @@ exports.getCoinDCXBalances = async (req, res) => {
 exports.getAllBalances = async (req, res) => {
   try {
     const userId = req.user.id;
+    const selectedCurrency = req.query.currency || "USDT";
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
 
-    let allBalances = [];
+    let binancePortfolio = null;
+    let coindcxPortfolio = null;
 
-    // Loop through all API keys the user has
-    for (const key of user.apiKeys) {
-      const apiKey = decryptApiKey(key.apiKey);
-      const apiSecret = decryptApiKey(key.apiSecret);
-      let data;
+    const binanceKey = user.apiKeys.find(
+      (k) => k.exchange.toLowerCase() === "binance"
+    );
+    const coindcxKey = user.apiKeys.find(
+      (k) => k.exchange.toLowerCase() === "coindcx"
+    );
 
-      switch (key.exchange) {
-        case "binance":
-          data = await binanceService.getAccountInfo(apiKey, apiSecret);
-          allBalances = allBalances.concat(data.balances || []);
-          break;
-        case "coindcx":
-          data = await coindcxService.getAccountInfo(apiKey, apiSecret);
-          allBalances = allBalances.concat(data || []);
-          break;
-        // Add other exchanges as you integrate them similarly
-        default:
-          break;
+    // Fetch CoinDCX
+    if (coindcxKey) {
+      try {
+        const apiKey = coindcxKey.apiKey;
+        const apiSecret = coindcxKey.apiSecret;
+        coindcxPortfolio = await coindcxService.getPortfolioValueForUser(
+          apiKey,
+          apiSecret,
+          selectedCurrency
+        );
+        console.log('coindcxPortfolio2', coindcxPortfolio);        // print whole object
+        console.log('coindcxPortfolio2.data', coindcxPortfolio.data); // s
+      } catch (err) {
+        console.error("CoinDCX fetch error:", err.message);
+        coindcxPortfolio = { success: false, data: [], error: "Failed to fetch CoinDCX portfolio" };
       }
     }
-
-    res.json({ balances: allBalances });
+    // if (binanceKey) {
+    //   try {
+    //     const apiKey = binanceKey.apiKey;
+    //     const apiSecret = binanceKey.apiSecret;
+    //     binancePortfolio = await binanceService.getPortfolioValueForUser(
+    //       apiKey,
+    //       apiSecret,
+    //       selectedCurrency
+    //     );
+    //   } catch (err) {
+    //     console.error("Binance fetch error:", err.message);
+    //     binancePortfolio = { error: "Failed to fetch Binance portfolio" };
+    //   }
+    // }
+    console.log('coindcxPortfolio', coindcxPortfolio.data);
+    res.json({
+      // binance: binancePortfolio,
+      coindcx: coindcxPortfolio,
+    });
   } catch (err) {
-    console.error("Error fetching all balances:", err.message);
-    res.status(500).json({ message: "Failed to fetch all balances" });
+    console.error("Error in getAllBalances:", err.message);
+    res.status(500).json({ message: "Unexpected server error" });
   }
 };
-

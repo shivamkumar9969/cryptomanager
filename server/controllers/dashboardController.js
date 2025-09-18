@@ -57,58 +57,60 @@ exports.dashboardSummary = async (req, res) => {
       coindcxPortfolio = await coindcxService.getPortfolioValueForUser(apiKey, apiSecret,selectedCurrency);
 
     }
-    if (binanceKey) {
-      const apiKey = binanceKey.apiKey;
-      const apiSecret = binanceKey.apiSecret;
-      binancePortfolio = await binanceService.getPortfolioValueForUser(apiKey, apiSecret);
-    }
+    // if (binanceKey) {
+    //   const apiKey = binanceKey.apiKey;
+    //   const apiSecret = binanceKey.apiSecret;
+    //   binancePortfolio = await binanceService.getPortfolioValueForUser(apiKey, apiSecret);
+    // }
+    // console.log('coindcxPortfolio' , coindcxPortfolio);
+    // console.log('binancePortfolio' , binancePortfolio);
 
-    const topAssets = mergeBalances([
-      {
-        exchange: "Binance",
-        balances: binancePortfolio?.assets || [],
-      },
-      {
-        exchange: "CoinDCX",
-        balances: coindcxPortfolio?.assets || [],
-      },
-    ]);
+    // const topAssets = mergeBalances([
+    //   {
+    //     exchange: "Binance",
+    //     balances: binancePortfolio?.assets || [],
+    //   },
+    //   {
+    //     exchange: "CoinDCX",
+    //     balances: coindcxPortfolio?.assets || [],
+    //   },
+    // ]);
 
-    const recentActivity = [
-      {
-        exchange: "Binance",
-        type: "Buy",
-        asset: "BTC",
-        amount: 0.01,
-        date: new Date().toISOString(),
-      },
-      {
-        exchange: "CoinDCX",
-        type: "Sell",
-        asset: "ETH",
-        amount: 0.5,
-        date: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ];
-
-    const result = {
-      exchanges: [
-        {
-          name: "Binance",
-          connected: !!binancePortfolio,
-          balancesValue: binancePortfolio?.totalValue || 0,
-          lastSync: new Date().toISOString(),
-        },
-        {
-          name: "CoinDCX",
-          connected: !!coindcxPortfolio,
-          balancesValue: coindcxPortfolio?.totalValue || 0,
-          lastSync: new Date().toISOString(),
-        },
-      ],
-      topAssets,
-      recentActivity,
-    };
+    // const recentActivity = [
+    //   {
+    //     exchange: "Binance",
+    //     type: "Buy",
+    //     asset: "BTC",
+    //     amount: 0.01,
+    //     date: new Date().toISOString(),
+    //   },
+    //   {
+    //     exchange: "CoinDCX",
+    //     type: "Sell",
+    //     asset: "ETH",
+    //     amount: 0.5,
+    //     date: new Date(Date.now() - 86400000).toISOString(),
+    //   },
+    // ];
+    $result=[];
+    // const result = {
+    //   exchanges: [
+    //     {
+    //       name: "Binance",
+    //       connected: !!binancePortfolio,
+    //       balancesValue: binancePortfolio?.totalValue || 0,
+    //       lastSync: new Date().toISOString(),
+    //     },
+    //     {
+    //       name: "CoinDCX",
+    //       connected: !!coindcxPortfolio,
+    //       balancesValue: coindcxPortfolio?.totalValue || 0,
+    //       lastSync: new Date().toISOString(),
+    //     },
+    //   ],
+    //   topAssets,
+    //   recentActivity,
+    // };
 
     res.json(result);
   } catch (err) {

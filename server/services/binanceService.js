@@ -103,7 +103,7 @@ async function cancelOrder(apiKey, apiSecret, symbol, orderId) {
   return res.data;
 }
 
-async function getPortfolioValueForUser(apiKey,apiSecret) {
+async function getPortfolioValueForUser(apiKey,apiSecret,selectedCurrency) {
   try {   
     const accountInfo = await getAccountInfo(apiKey, apiSecret);
     let totalValue = 0;

@@ -6,194 +6,268 @@ import PortfolioSidebar from "./PortfolioSidebar";
 
 interface Balance {
   asset: string;
-  free: string;
-  locked: string;
+  free_quantity: number;
+  locked_quantity: number;
+  price: number;
+  value: number;
   exchange?: string;
 }
+
+interface ApiBalance {
+  asset: string;
+  free_quantity?: string | number;
+  free?: string | number;
+  quantity?: string | number;
+  locked_quantity?: string | number;
+  locked?: string | number;
+  price?: string | number;
+  value?: string | number;
+}
+
 
 interface ExchangeData {
   name: string;
   balances: Balance[];
 }
 
-type RawBalance = {
-  asset?: string;
-  free?: string | number;
-  locked?: string | number;
-  currency?: string;
-  balance?: string | number;
-  locked_balance?: string | number;
-};
-
 export default function PortfolioPage() {
-  const [exchanges, setExchanges] = useState<string[]>(["Binance", "CoinDCX"]);
+  const [exchanges] = useState<string[]>(["Binance", "CoinDCX"]);
   const [data, setData] = useState<ExchangeData[]>([]);
   const [activeExchange, setActiveExchange] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const currencySymbolMap: Record<string, string> = {
+    USD: "$",
+    USDT: "$",
+    INR: "₹",
+    EUR: "€",
+    BTC: "₿",
+  };
 
+  const currencyCode =
+    typeof window !== "undefined" && localStorage.getItem("currency")
+      ? localStorage.getItem("currency")!.toUpperCase()
+      : "USD";
+
+  const currencySymbol = currencySymbolMap[currencyCode] || currencyCode;
+
+  const numberFormatter = new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 8,
+  });
+
+  const formatCurrency = (amount: number) =>
+    amount !== 0 ? `${currencySymbol}${numberFormatter.format(amount)}` : "-";
+
+  // New formatter for total value - 2 decimals only
+  const formatTotalValue = (amount: number) =>
+    amount !== 0 ? `${currencySymbol}${amount.toFixed(2)}` : "-";
+
+  const mapApiBalances = (arr: ApiBalance[], exchange: string): Balance[] =>
+    arr.map((b) => ({
+      asset: b.asset,
+      free_quantity: Number(b.free_quantity ?? b.free ?? b.quantity ?? 0),
+      locked_quantity: Number(b.locked_quantity ?? b.locked ?? 0),
+      price: Number(b.price ?? 0),
+      value: Number(b.value ?? 0),
+      exchange,
+    }));
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const selectedCurrency = localStorage.getItem("currency") || "USDT";
     if (!token) {
       window.location.href = "/login";
       return;
     }
-
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const results: ExchangeData[] = [];
-
-        for (const ex of exchanges) {
-          try {
-            const endpoint = ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
-
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-
-            const balancesArray = Array.isArray(res.data) ? res.data : res.data?.balances || [];
-
-            const filtered = balancesArray
-              .map((b: RawBalance) => ({
-                asset: b.currency || b.asset || "",
-                free: (b.balance ?? b.free ?? 0).toString(),
-                locked: (b.locked_balance ?? b.locked ?? 0).toString(),
-                exchange: ex,
-              }))
-              .filter((b: Balance) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0);
-
-
-            results.push({ name: ex, balances: filtered });
-          } catch (err) {
-            console.error("Portfolio fetch error", err);
-          } finally {
-            setLoading(false);
-          }
-        }
-
-        setData(results);
-
-      } catch (err) {
-        console.error("Portfolio fetch error", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    setLoading(true);
+    Promise.all(
+      exchanges.map((ex) => {
+        const endpoint =
+          ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
+        return axios
+          .get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { currency: selectedCurrency },
+          })
+          .then((res) => {
+            const portfolio =
+              ex === "Binance" ? res.data.binance : res.data.coindcx;
+            return {
+              name: ex,
+              balances: Array.isArray(portfolio)
+                ? mapApiBalances(portfolio, ex)
+                : [],
+            };
+          })
+          .catch(() => ({
+            name: ex,
+            balances: [],
+          }));
+      })
+    )
+      .then((results) => setData(results))
+      .finally(() => setLoading(false));
   }, [exchanges]);
 
   const getDisplayedBalances = () => {
     let allBalances: Balance[] = [];
-
     if (activeExchange === "All") {
       data.forEach((ex) => (allBalances = [...allBalances, ...ex.balances]));
     } else {
       const selected = data.find((ex) => ex.name === activeExchange);
       if (selected) allBalances = selected.balances;
     }
-
-    return allBalances.filter((b) => b.asset.toLowerCase().includes(searchTerm.toLowerCase()));
+    return allBalances.filter((b) =>
+      b.asset?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   };
 
   const displayed = getDisplayedBalances();
 
-  // Helper: define badge color and label per exchange
+  // Calculate estimated total value with 2 decimals format
+  const estTotalValue = displayed.reduce((acc, b) => acc + b.value, 0);
+
+  const CoinIcon = ({ asset }: { asset: string }) => {
+    const symbol = asset?.toLowerCase();
+    const [imgSrc, setImgSrc] = useState(`/coins/${symbol}.png`);
+    return (
+      <img
+        src={imgSrc}
+        alt={asset}
+        className="w-7 h-7 rounded-full bg-gray-900 border border-gray-700 object-cover mr-2"
+        onError={() => setImgSrc("/coins/default.png")}
+      />
+    );
+  };
+
   const getExchangeBadge = (exchange?: string) => {
     if (exchange === "Binance")
       return (
-        <span className="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded bg-opacity-80 bg-yellow-500 text-black select-none">
+        <span className="px-2 py-0.5 text-xs rounded bg-yellow-500 text-black font-semibold">
           Binance
         </span>
       );
     if (exchange === "CoinDCX")
       return (
-        <span className="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded bg-opacity-80 bg-blue-500 text-white select-none">
+        <span className="px-2 py-0.5 text-xs rounded bg-blue-500 text-white font-semibold">
           CoinDCX
         </span>
       );
     return null;
   };
 
-  // Coin icon loader – uses static assets from public/coins/
-  const CoinIcon = ({ asset }: { asset: string }) => {
-    const symbol = asset.toLowerCase();
-    const [imgSrc, setImgSrc] = useState(`/coins/${symbol}.png`);
-
-    const handleError = () => {
-      setImgSrc("/coins/default.png");
-    };
-
-    return (
-      <img
-        src={imgSrc}
-        alt={asset}
-        className="w-9 h-9 rounded-full bg-gray-900 border border-gray-700 object-cover"
-        onError={handleError}
-      />
-    );
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <PortfolioSidebar exchanges={exchanges} active={activeExchange} onSelect={setActiveExchange} />
+      <PortfolioSidebar
+        exchanges={exchanges}
+        active={activeExchange}
+        onSelect={setActiveExchange}
+      />
 
-      {/* Main Content */}
       <div className="flex-1 p-4">
-        {/* Removed Portfolio heading */}
-
-        {/* Smaller Search Box */}
         <input
           type="text"
           placeholder="Search assets..."
-          className="w-72 p-2 mb-6 rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400
+          className="w-72 p-2 mb-2 rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 
             focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        {/* Loading State */}
+        {/* Estimated Total Value display */}
+        {/* Estimated Total Value display */}
+        <div className="mb-4 flex justify-end">
+          <div className="inline-block text-lg font-bold text-gray-300 bg-[#181f2a] rounded-lg px-5 py-2 shadow-md select-none">
+            <span className="text-gray-400">Est. Total Value:</span>{" "}
+            <span className="text-green-400 font-extrabold">
+              {formatTotalValue(estTotalValue)}
+            </span>
+          </div>
+        </div>
+
+
+
+
         {loading ? (
-          <div className="flex items-center justify-center mt-20 text-gray-400 text-lg">
+          <div className="flex items-center justify-center mt-4 text-gray-400 text-lg">
             <div className="animate-spin h-8 w-8 border-4 border-yellow-400 border-t-transparent rounded-full mr-3"></div>
             Loading coins...
           </div>
         ) : displayed.length === 0 ? (
-          <div className="text-gray-400 text-center mt-20">No balances found.</div>
+          <div className="text-gray-400 text-center mt-4">No balances found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayed.map((b, idx) => (
-              <div
-                key={idx}
-                className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl border border-gray-800 shadow-md px-4 py-4 flex flex-col gap-3
-          hover:bg-gradient-to-br hover:from-gray-800 hover:via-gray-900 hover:to-gray-800 hover:shadow-lg transition"
-              >
-                {/* Exchange badge */}
-                {activeExchange === "All" ? getExchangeBadge(b.exchange) : getExchangeBadge(activeExchange)}
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-gray-900 rounded-xl border border-gray-800 shadow-md">
+              <thead>
+                <tr className="bg-gray-800 border-b border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-yellow-300 uppercase">
+                    Asset
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-green-300 uppercase">
+                    Free
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-red-300 uppercase">
+                    Locked
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-yellow-300 uppercase">
+                    Price
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase">
+                    Total Value
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-blue-300 uppercase">
+                    Exchange
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayed.map((b, idx) => (
+                  <tr
+                    key={idx}
+                    className="border-b border-gray-800 hover:bg-gray-800 transition"
+                  >
+                    <td className="px-4 py-2 flex items-center">
+                      <CoinIcon asset={b.asset} />
+                      <span className="font-semibold text-yellow-200">{b.asset}</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="text-green-300 font-semibold">
+                        {b.free_quantity.toLocaleString(undefined, {
+                          maximumFractionDigits: 8,
+                        })}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={
+                          b.locked_quantity > 0
+                            ? "text-red-300 font-bold"
+                            : "text-gray-500 font-semibold"
+                        }
+                      >
+                        {b.locked_quantity.toLocaleString(undefined, {
+                          maximumFractionDigits: 8,
+                        })}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="text-yellow-400 font-medium">
+                        {formatCurrency(b.price)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="font-extrabold text-cyan-400">
+                        {formatCurrency(b.value)}
+                      </span>
+                    </td>
 
-                {/* Coin logo & symbol */}
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-700 bg-gray-900 overflow-hidden">
-                    <CoinIcon asset={b.asset} />
-                  </div>
-                  <div className="text-base font-semibold tracking-wide text-yellow-300">{b.asset}</div>
-                </div>
 
-                {/* Balances */}
-                <div className="flex flex-row gap-4 ml-1">
-                  <span className="text-xs text-green-400 font-medium">
-                    Free: <span className="font-semibold">{parseFloat(b.free).toLocaleString(undefined, { maximumFractionDigits: 8 })}</span>
-                  </span>
-                  <span className={`text-xs font-medium ${parseFloat(b.locked) > 0 ? "text-red-400" : "text-gray-500"}`}>
-                    Locked: <span>{parseFloat(b.locked).toLocaleString(undefined, { maximumFractionDigits: 8 })}</span>
-                  </span>
-                </div>
-              </div>
-            ))}
+                    <td className="px-4 py-2">{getExchangeBadge(b.exchange)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
