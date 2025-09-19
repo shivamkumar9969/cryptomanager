@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const BINANCE_BASE_URL = 'https://api.binance.com';
 
-
+// Maps crypto symbols to CoinGecko IDs for price fetch
 async function getPriceUSD(symbol) {
   try {
     const idMap = {
@@ -26,9 +26,26 @@ async function getPriceUSD(symbol) {
   }
 }
 
+// Converts USDT to any target fiat using CoinGecko
+async function getFiatConversion(base = 'USDT', to = 'INR') {
+  try {
+    if (base === to) return 1;
+    // CoinGecko uses lower case fiat currency names for vs_currencies param
+    // Uses tether (USDT) as bridge for most crypto
+    const res = await axios.get(
+      `https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=${to.toLowerCase()}`
+    );
+    return res.data['tether']?.[to.toLowerCase()] || 0;
+  } catch {
+    return 0;
+  }
+}
+
 function signQuery(queryString, secret) {
   return crypto.createHmac('sha256', secret).update(queryString).digest('hex');
 }
+
+// Returns just the filtered 'balances' array directly
 async function getAccountInfo(apiKey, apiSecret) {
   try {
     const timestamp = Date.now();
@@ -40,29 +57,10 @@ async function getAccountInfo(apiKey, apiSecret) {
       timeout: 10000,
     });
 
-    const balances = res.data.balances.filter(
+    // Return only balances array
+    return res.data.balances.filter(
       (b) => parseFloat(b.free) + parseFloat(b.locked) > 0
     );
-    const symbols = balances
-      .map((b) => (b.asset === "USDT" ? null : `${b.asset}USDT`))
-      .filter(Boolean);
-    let prices = {};
-    if (symbols.length > 0) {
-      const priceRes = await axios.get(`${BINANCE_BASE_URL}/api/v3/ticker/price`, {
-        params: { symbols: JSON.stringify(symbols) }, 
-      });
-      prices = priceRes.data.reduce((acc, p) => {
-        acc[p.symbol.replace("USDT", "")] = parseFloat(p.price);
-        return acc;
-      }, {});
-    }
-    const portfolio = balances.map((b) => {
-      const quantity = parseFloat(b.free) + parseFloat(b.locked);
-      const price = b.asset === "USDT" ? 1 : prices[b.asset] || 0;
-      const value = quantity * price;
-      return { asset: b.asset, quantity, price, value };
-    });    
-    return portfolio;
   } catch (err) {
     const message = err.response?.data || err.message;
     throw new Error(typeof message === "string" ? message : JSON.stringify(message));
@@ -103,36 +101,95 @@ async function cancelOrder(apiKey, apiSecret, symbol, orderId) {
   return res.data;
 }
 
-async function getPortfolioValueForUser(apiKey,apiSecret,selectedCurrency) {
-  try {   
-    const accountInfo = await getAccountInfo(apiKey, apiSecret);
-    let totalValue = 0;
-    const assets = [];
-    for (const asset of accountInfo.balances) {
-      const freeAmount = parseFloat(asset.free);
-      const lockedAmount = parseFloat(asset.locked);
-      const totalAmount = freeAmount + lockedAmount;
-      if (totalAmount > 0) {
-        const price = await getPriceUSD(asset.asset);
-        const value = totalAmount * price;
-        totalValue += value;
-        assets.push({
-          asset: asset.asset,
-          quantity: totalAmount,
-          value,
+// Unified format, supports cross-currency valuation just like CoinDCX
+async function getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency = "USDT") {
+  try {
+    const balances = await getAccountInfo(apiKey, apiSecret);
+
+    // Create symbol pairs asset+selectedCurrency for Binance ticker query
+    const symbolSet = new Set(
+      balances
+        .filter(b => b.asset !== selectedCurrency)
+        .map(b => `${b.asset}${selectedCurrency}`)
+    );
+
+    let prices = {};
+    if (symbolSet.size > 0 && ["USDT", "BTC", "ETH", "BNB"].includes(selectedCurrency.toUpperCase())) {
+      try {
+        const priceRes = await axios.get(`${BINANCE_BASE_URL}/api/v3/ticker/price`, {
+          params: { symbols: JSON.stringify(Array.from(symbolSet)) },
         });
+        (priceRes.data || []).forEach((p) => {
+          prices[p.symbol] = parseFloat(p.price);
+        });
+      } catch {
+        // fallback silent
       }
     }
-    return { totalValue, assets };
+
+    // CoinGecko fiat conversion for fallback or non-Binance currencies like INR
+    let usdtToTarget = 1;
+    if (selectedCurrency !== "USDT") {
+      const conversionRates = {
+        'inr': 'inr',
+        'usd': 'usd',
+        'eur': 'eur',
+      };
+      const fiatKey = selectedCurrency.toLowerCase();
+      if (conversionRates[fiatKey]) {
+        try {
+          const res = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=${fiatKey}`);
+          usdtToTarget = res.data?.tether?.[fiatKey] || 1;
+        } catch {
+          usdtToTarget = 1;
+        }
+      }
+    }
+
+    async function getPriceInSelectedCurrency(asset) {
+      if (asset === selectedCurrency) return 1;
+
+      const directSymbol = `${asset}${selectedCurrency}`;
+      if (prices[directSymbol]) return prices[directSymbol];
+
+      const usdtSymbol = `${asset}USDT`;
+      if (prices[usdtSymbol]) {
+        return prices[usdtSymbol] * usdtToTarget;
+      }
+
+      const priceInUSDT = await getPriceUSD(asset);
+      return priceInUSDT * usdtToTarget;
+    }
+
+    const portfolio = [];
+    for (const b of balances) {
+      const freeQty = parseFloat(b.free);
+      const lockedQty = parseFloat(b.locked);
+      const totalQty = freeQty + lockedQty;
+      if (totalQty <= 0) continue;
+      const price = await getPriceInSelectedCurrency(b.asset);
+      portfolio.push({
+        asset: b.asset,
+        free_quantity: freeQty,
+        locked_quantity: lockedQty,
+        quantity: totalQty,
+        price,
+        value: totalQty * price,
+      });
+    }
+
+    return portfolio;
   } catch (err) {
-    console.error("Binance portfolio value error:", err.message);
-    return null;
+    console.error("Binance portfolio error:", err.message);
+    return [];
   }
 }
+
+
 module.exports = {
   getAccountInfo,
   placeOrder,
   getAllOrders,
   cancelOrder,
-  getPortfolioValueForUser, 
+  getPortfolioValueForUser,
 };

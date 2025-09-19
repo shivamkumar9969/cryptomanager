@@ -12,7 +12,6 @@ interface Balance {
   value: number;
   exchange?: string;
 }
-
 interface ApiBalance {
   asset: string;
   free_quantity?: string | number;
@@ -23,8 +22,6 @@ interface ApiBalance {
   price?: string | number;
   value?: string | number;
 }
-
-
 interface ExchangeData {
   name: string;
   balances: Balance[];
@@ -36,33 +33,29 @@ export default function PortfolioPage() {
   const [activeExchange, setActiveExchange] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [hideSmallBalances, setHideSmallBalances] = useState(false);
+
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Balance; direction: 'asc' | 'desc' } | null>(null);
 
   const currencySymbolMap: Record<string, string> = {
-    USD: "$",
-    USDT: "$",
-    INR: "₹",
-    EUR: "€",
-    BTC: "₿",
+    USD: "$ ",
+    USDT: "$ ",
+    INR: "₹ ",
+    EUR: "€ ",
+    BTC: "₿ ",
   };
-
   const currencyCode =
     typeof window !== "undefined" && localStorage.getItem("currency")
       ? localStorage.getItem("currency")!.toUpperCase()
       : "USD";
-
   const currencySymbol = currencySymbolMap[currencyCode] || currencyCode;
-
   const numberFormatter = new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 8,
   });
-
   const formatCurrency = (amount: number) =>
     amount !== 0 ? `${currencySymbol}${numberFormatter.format(amount)}` : "-";
-
-  // New formatter for total value - 2 decimals only
   const formatTotalValue = (amount: number) =>
     amount !== 0 ? `${currencySymbol}${amount.toFixed(2)}` : "-";
-
   const mapApiBalances = (arr: ApiBalance[], exchange: string): Balance[] =>
     arr.map((b) => ({
       asset: b.asset,
@@ -72,7 +65,6 @@ export default function PortfolioPage() {
       value: Number(b.value ?? 0),
       exchange,
     }));
-
   useEffect(() => {
     const token = localStorage.getItem("token");
     const selectedCurrency = localStorage.getItem("currency") || "USDT";
@@ -91,8 +83,7 @@ export default function PortfolioPage() {
             params: { currency: selectedCurrency },
           })
           .then((res) => {
-            const portfolio =
-              ex === "Binance" ? res.data.binance : res.data.coindcx;
+            const portfolio = ex === "Binance" ? res.data.binance : res.data.coindcx;
             return {
               name: ex,
               balances: Array.isArray(portfolio)
@@ -118,15 +109,66 @@ export default function PortfolioPage() {
       const selected = data.find((ex) => ex.name === activeExchange);
       if (selected) allBalances = selected.balances;
     }
-    return allBalances.filter((b) =>
+    let filtered = allBalances.filter((b) =>
       b.asset?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    if (hideSmallBalances) {
+      filtered = filtered.filter((b) => b.value >= 1);
+    }
+    return filtered;
   };
 
   const displayed = getDisplayedBalances();
 
-  // Calculate estimated total value with 2 decimals format
-  const estTotalValue = displayed.reduce((acc, b) => acc + b.value, 0);
+  const onSort = (columnKey: keyof Balance) => {
+    if (sortConfig?.key === columnKey) {
+      setSortConfig({
+        key: columnKey,
+        direction: sortConfig.direction === "asc" ? "desc" : "asc",
+      });
+    } else {
+      setSortConfig({ key: columnKey, direction: "asc" });
+    }
+  };
+
+  const renderSortArrows = (columnKey: keyof Balance) => (
+    <span className="ml-1 flex flex-col text-xs text-gray-400 leading-none">
+      <span
+        className={
+          sortConfig?.key === columnKey && sortConfig?.direction === "asc"
+            ? "text-yellow-400"
+            : ""
+        }
+      >
+        ▲
+      </span>
+      <span
+        className={
+          sortConfig?.key === columnKey && sortConfig?.direction === "desc"
+            ? "text-yellow-400"
+            : ""
+        }
+      >
+        ▼
+      </span>
+    </span>
+  );
+
+  const sortedDisplayed = sortConfig
+    ? [...displayed].sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+      if (valA === undefined) valA = sortConfig.key === "asset" ? "" : 0;
+      if (valB === undefined) valB = sortConfig.key === "asset" ? "" : 0;
+      if (typeof valA === "string") valA = valA.toLowerCase();
+      if (typeof valB === "string") valB = valB.toLowerCase();
+      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    })
+    : displayed;
+
+  const estTotalValue = sortedDisplayed.reduce((acc, b) => acc + b.value, 0);
 
   const CoinIcon = ({ asset }: { asset: string }) => {
     const symbol = asset?.toLowerCase();
@@ -158,91 +200,134 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
+    <div className="flex min-h-screen bg-[#121926] text-gray-200 font-sans">
       <PortfolioSidebar
         exchanges={exchanges}
         active={activeExchange}
         onSelect={setActiveExchange}
       />
 
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-6 max-w-7xl mx-auto">
         <input
           type="text"
           placeholder="Search assets..."
-          className="w-72 p-2 mb-2 rounded-md border border-gray-700 bg-gray-800 text-white placeholder-gray-400 
-            focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition"
+          className="w-80 p-3 mb-4 rounded-lg border border-gray-700 bg-[#1e293b] text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        {/* Estimated Total Value display */}
-        {/* Estimated Total Value display */}
-        <div className="mb-4 flex justify-end">
-          <div className="inline-block text-lg font-bold text-gray-300 bg-[#181f2a] rounded-lg px-5 py-2 shadow-md select-none">
-            <span className="text-gray-400">Est. Total Value:</span>{" "}
-            <span className="text-green-400 font-extrabold">
-              {formatTotalValue(estTotalValue)}
-            </span>
+        <div className="mb-5 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="hideSmallBalances"
+              checked={hideSmallBalances}
+              onChange={(e) => setHideSmallBalances(e.target.checked)}
+              className="accent-blue-500 scale-125"
+            />
+            <label htmlFor="hideSmallBalances" className="text-gray-400 select-none text-sm font-medium">
+              Hide small balances (value &lt; 1)
+            </label>
+          </div>
+
+          <div className="inline-block text-lg font-semibold text-gray-300 bg-[#1e293b] rounded-md px-6 py-3 shadow-lg select-none">
+            <span className="text-gray-400 mr-2">Est. Total Value:</span>
+            <span className="text-blue-400 font-extrabold">{formatTotalValue(estTotalValue)}</span>
           </div>
         </div>
 
-
-
-
         {loading ? (
-          <div className="flex items-center justify-center mt-4 text-gray-400 text-lg">
-            <div className="animate-spin h-8 w-8 border-4 border-yellow-400 border-t-transparent rounded-full mr-3"></div>
-            Loading coins...
+          <div className="flex items-center justify-center mt-20 text-gray-400 text-lg">
+            <div className="animate-spin h-9 w-9 border-4 border-blue-500 border-t-transparent rounded-full mr-4"></div>
+            Loading portfolio...
           </div>
-        ) : displayed.length === 0 ? (
-          <div className="text-gray-400 text-center mt-4">No balances found.</div>
+        ) : sortedDisplayed.length === 0 ? (
+          <div className="text-center text-gray-500 mt-20 text-lg">No balances found.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-gray-900 rounded-xl border border-gray-800 shadow-md">
+          <div className="overflow-x-auto rounded-lg shadow-xl border border-gray-700">
+            <table className="w-full table-auto rounded-lg border border-gray-700">
               <thead>
-                <tr className="bg-gray-800 border-b border-gray-700">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-yellow-300 uppercase">
-                    Asset
+                <tr className="border-b border-gray-700">
+                  <th
+                    className="px-5 py-4 cursor-pointer select-none text-gray-300 uppercase tracking-wider text-left text-sm font-semibold"
+                    onClick={() => onSort("asset")}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span>Asset</span>
+                      {renderSortArrows("asset")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-green-300 uppercase">
-                    Free
+
+                  <th
+                    className="px-5 py-4 cursor-pointer select-none text-green-400 uppercase tracking-wider text-left text-sm font-semibold"
+                    onClick={() => onSort("free_quantity")}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span>Free Quantity</span>
+                      {renderSortArrows("free_quantity")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-red-300 uppercase">
-                    Locked
+
+                  <th
+                    className="px-5 py-4 cursor-pointer select-none text-red-400 uppercase tracking-wider text-left text-sm font-semibold"
+                    onClick={() => onSort("locked_quantity")}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span>Locked Quantity</span>
+                      {renderSortArrows("locked_quantity")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-yellow-300 uppercase">
-                    Price
+
+                  <th
+                    className="px-5 py-4 cursor-pointer select-none bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent uppercase tracking-wider text-left text-sm font-semibold"
+                    onClick={() => onSort("price")}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span>Market Price</span>
+                      {renderSortArrows("price")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-cyan-300 uppercase">
-                    Total Value
+
+                  <th
+                    className="px-5 py-4 cursor-pointer select-none text-cyan-400 uppercase tracking-wider text-left text-sm font-semibold"
+                    onClick={() => onSort("value")}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span>Current Value</span>
+                      {renderSortArrows("value")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-blue-300 uppercase">
+
+                  <th className="px-5 py-4 text-left text-xs font-semibold text-blue-400 uppercase tracking-wide">
                     Exchange
                   </th>
                 </tr>
               </thead>
+
               <tbody>
-                {displayed.map((b, idx) => (
+                {sortedDisplayed.map((b, idx) => (
                   <tr
                     key={idx}
-                    className="border-b border-gray-800 hover:bg-gray-800 transition"
+                    className="border-b border-gray-700 hover:bg-[#2a3a4c] transition cursor-default"
                   >
-                    <td className="px-4 py-2 flex items-center">
+                    <td className="px-5 py-3 flex items-center space-x-3">
                       <CoinIcon asset={b.asset} />
-                      <span className="font-semibold text-yellow-200">{b.asset}</span>
+                      <span className="font-semibold text-gray-100">{b.asset}</span>
                     </td>
-                    <td className="px-4 py-2">
-                      <span className="text-green-300 font-semibold">
+
+                    <td className="px-5 py-3">
+                      <span className="text-green-400 font-semibold">
                         {b.free_quantity.toLocaleString(undefined, {
                           maximumFractionDigits: 8,
                         })}
                       </span>
                     </td>
-                    <td className="px-4 py-2">
+
+                    <td className="px-5 py-3">
                       <span
                         className={
                           b.locked_quantity > 0
-                            ? "text-red-300 font-bold"
+                            ? "text-red-400 font-bold"
                             : "text-gray-500 font-semibold"
                         }
                       >
@@ -251,19 +336,18 @@ export default function PortfolioPage() {
                         })}
                       </span>
                     </td>
-                    <td className="px-4 py-2">
-                      <span className="text-yellow-400 font-medium">
-                        {formatCurrency(b.price)}
-                      </span>
+
+                    <td className="px-5 py-3 text-left font-semibold text-teal-300 hover:text-cyan-400 transition">
+                      {formatCurrency(b.price)}
                     </td>
-                    <td className="px-4 py-2">
+
+                    <td className="px-5 py-3">
                       <span className="font-extrabold text-cyan-400">
                         {formatCurrency(b.value)}
                       </span>
                     </td>
 
-
-                    <td className="px-4 py-2">{getExchangeBadge(b.exchange)}</td>
+                    <td className="px-5 py-3">{getExchangeBadge(b.exchange)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -273,4 +357,5 @@ export default function PortfolioPage() {
       </div>
     </div>
   );
+
 }

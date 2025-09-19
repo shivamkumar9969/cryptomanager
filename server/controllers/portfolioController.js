@@ -36,7 +36,7 @@ exports.getCoinDCXBalances = async (req, res) => {
       const apiKey = coindcxKey.apiKey;
       const apiSecret = coindcxKey.apiSecret;
       coindcxPortfolio = await coindcxService.getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency);
-    }
+    }    
     res.json({ coindcx: coindcxPortfolio });
   } catch (err) {
     console.error("CoinDCX error:", err.message);
@@ -46,54 +46,30 @@ exports.getCoinDCXBalances = async (req, res) => {
 
 exports.getAllBalances = async (req, res) => {
   try {
+    console.log('all');
     const userId = req.user.id;
     const selectedCurrency = req.query.currency || "USDT";
     const user = await User.findById(userId);
-
     let binancePortfolio = null;
     let coindcxPortfolio = null;
-
     const binanceKey = user.apiKeys.find(
       (k) => k.exchange.toLowerCase() === "binance"
     );
     const coindcxKey = user.apiKeys.find(
       (k) => k.exchange.toLowerCase() === "coindcx"
     );
-
-    // Fetch CoinDCX
     if (coindcxKey) {
-      try {
-        const apiKey = coindcxKey.apiKey;
-        const apiSecret = coindcxKey.apiSecret;
-        coindcxPortfolio = await coindcxService.getPortfolioValueForUser(
-          apiKey,
-          apiSecret,
-          selectedCurrency
-        );
-        console.log('coindcxPortfolio2', coindcxPortfolio);        // print whole object
-        console.log('coindcxPortfolio2.data', coindcxPortfolio.data); // s
-      } catch (err) {
-        console.error("CoinDCX fetch error:", err.message);
-        coindcxPortfolio = { success: false, data: [], error: "Failed to fetch CoinDCX portfolio" };
-      }
+      const apiKey = coindcxKey.apiKey;
+      const apiSecret = coindcxKey.apiSecret;
+      coindcxPortfolio = await coindcxService.getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency);
     }
-    // if (binanceKey) {
-    //   try {
-    //     const apiKey = binanceKey.apiKey;
-    //     const apiSecret = binanceKey.apiSecret;
-    //     binancePortfolio = await binanceService.getPortfolioValueForUser(
-    //       apiKey,
-    //       apiSecret,
-    //       selectedCurrency
-    //     );
-    //   } catch (err) {
-    //     console.error("Binance fetch error:", err.message);
-    //     binancePortfolio = { error: "Failed to fetch Binance portfolio" };
-    //   }
-    // }
-    console.log('coindcxPortfolio', coindcxPortfolio.data);
+    if (binanceKey) {
+      const apiKey = binanceKey.apiKey;
+      const apiSecret = binanceKey.apiSecret;
+      binancePortfolio = await binanceService.getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency);
+    }
     res.json({
-      // binance: binancePortfolio,
+      binance: binancePortfolio,
       coindcx: coindcxPortfolio,
     });
   } catch (err) {
