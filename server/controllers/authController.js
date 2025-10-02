@@ -116,11 +116,12 @@ exports.forgotPassword = async (req, res) => {
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
     console.log('rest link.......', resetLink);
 
+    res.json({ message: "Password reset link sent to your email" });
+
     await sendOtpEmail(
       email,
       `Click here to reset your password: ${resetLink}`
     );
-
     return res.json({ message: "Password reset link sent to your email" });
   } catch (err) {
     return res.status(500).json({ message: err.message });
