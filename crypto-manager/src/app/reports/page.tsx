@@ -36,47 +36,56 @@ interface ExchangeData {
   balances: Balance[];
 }
 
+type PortfolioBalance = {
+  asset: string;
+  value: number;
+  exchange: string;
+};
+
+
 export default function ReportsPage() {
   const [exchanges] = useState<string[]>(["Binance", "CoinDCX"]);
   const [data, setData] = useState<ExchangeData[]>([]);
   const [activeExchange, setActiveExchange] = useState("All");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const selectedCurrency = localStorage.getItem("currency") || "USDT";
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  const selectedCurrency = localStorage.getItem("currency") || "USDT";
+  if (!token) {
+    window.location.href = "/login";
+    return;
+  }
 
-    setLoading(true);
-    Promise.all(
-      exchanges.map((ex) => {
-        const endpoint =
-          ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
-        return axios
-          .get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { currency: selectedCurrency },
-          })
-          .then((res) => {
-            const portfolio = ex === "Binance" ? res.data.binance : res.data.coindcx;
-            const mapped = (Array.isArray(portfolio) ? portfolio : []).map(
-              (b: any) => ({
-                asset: b.asset,
-                value: Number(b.value ?? 0),
-                exchange: ex,
-              })
-            );
-            return { name: ex, balances: mapped };
-          })
-          .catch(() => ({ name: ex, balances: [] }));
-      })
-    )
-      .then((results) => setData(results))
-      .finally(() => setLoading(false));
-  }, [exchanges]);
+  setLoading(true);
+  Promise.all(
+    exchanges.map((ex) => {
+      const endpoint =
+        ex === "Binance" ? "/api/portfolio/binance" : "/api/portfolio/coindcx";
+      return axios
+        .get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { currency: selectedCurrency },
+        })
+        .then((res) => {
+          const portfolio = ex === "Binance" ? res.data.binance : res.data.coindcx;
+
+          const mapped: PortfolioBalance[] = (Array.isArray(portfolio) ? portfolio : []).map(
+            (b): PortfolioBalance => ({
+              asset: String(b.asset),
+              value: Number(b.value ?? 0),
+              exchange: ex,
+            })
+          );
+
+          return { name: ex, balances: mapped };
+        })
+        .catch(() => ({ name: ex, balances: [] as PortfolioBalance[] }));
+    })
+  )
+    .then((results) => setData(results))
+    .finally(() => setLoading(false));
+}, [exchanges]);
 
   // Filter by exchange
   const getDisplayedBalances = () => {
