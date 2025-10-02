@@ -41,6 +41,20 @@ export default function PortfolioSidebar({ exchanges, active, onSelect }: Portfo
             </button>
           </li>
         ))}
+
+        {/* <li className="mt-6">
+  <a
+    href="/reports"
+    className={`block px-3 py-2 rounded-md ${
+      pathname === "/reports"
+        ? "bg-yellow-500 text-gray-900 font-semibold"
+        : "text-gray-300 hover:bg-gray-800"
+    }`}
+  >
+    Reports
+  </a>
+</li> */}
+
       </ul>
     </aside>
   );
