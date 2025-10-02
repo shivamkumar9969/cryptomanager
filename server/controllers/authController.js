@@ -101,7 +101,7 @@ exports.login = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
-  console.log('forget', email);
+  console.log('forget..', email);
   try {
     const user = await User.findOne({ email, isVerified: true });
     if (!user) return res.status(400).json({ message: "User not found" });
@@ -114,6 +114,7 @@ exports.forgotPassword = async (req, res) => {
     await user.save();
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
+    console.log('rest link.......', resetLink);
 
     await sendOtpEmail(
       email,
