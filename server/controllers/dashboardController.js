@@ -98,14 +98,6 @@ exports.dashboardSummary = async (req, res) => {
       amount: a.quantity,
       date: new Date().toISOString(),
     }));
-
-    console.log({
-      totalValue,
-      exchanges,
-      recentActivity,
-      topAssets: mergedAssets.slice(0, 3),
-    });
-
     res.json({
       success: true,
       data: {

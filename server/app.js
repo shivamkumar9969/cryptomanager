@@ -7,6 +7,7 @@ const apiRoutes = require("./routes/api");
 const portfolioRoutes = require("./routes/portfolioRoutes");
 const apiKeysRoutes = require("./routes/apiKeysRoutes");
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const tradingdRoutes = require('./routes/tradingRoutes');
 const PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/orders", require("./routes/ordersRoutes"));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/dashboard', dashboardRoutes);
 app.use("/api/settings", require("./routes/settingsRoutes"));
+app.use("/api/trading", tradingdRoutes);
 module.exports = app;
 
 

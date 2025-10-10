@@ -46,7 +46,6 @@ exports.getCoinDCXBalances = async (req, res) => {
 
 exports.getAllBalances = async (req, res) => {
   try {
-    console.log('all');
     const userId = req.user.id;
     const selectedCurrency = req.query.currency || "USDT";
     const user = await User.findById(userId);
