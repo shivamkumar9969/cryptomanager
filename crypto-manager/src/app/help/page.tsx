@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import axios from "axios";
+const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 interface FAQ {
   question: string;
@@ -36,10 +38,21 @@ export default function HelpPage() {
     setContactForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  async function saveMessage() {
+    const token = localStorage.getItem('token');
+    const res = await axios.post(`${baseUrl}/api/help/support`,
+      { contactForm },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (res.data.success) {
+      setSubmitted(true);
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Send to your backend support API
-    setSubmitted(true);
+    saveMessage();
+
   };
 
   return (
