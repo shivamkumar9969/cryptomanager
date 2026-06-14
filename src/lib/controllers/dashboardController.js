@@ -2,18 +2,15 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../dbConnect';
 import binanceService from "../services/binanceService";
 import coindcxService from "../services/coindcxService";
-import User from "../models/User";
 import ExchangeKey from "../models/ExchangeKey";
 import { decrypt } from "../services/encryptionService";
 
-export const dashboardSummary = async (req, { params } = {}) => {
+export const dashboardSummary = async (req) => {
   await dbConnect();
   try {
     const userId = req.user.id;
     const { searchParams } = new URL(req.url);
     const selectedCurrency = searchParams.get("currency") || "USDT";
-
-    const user = await User.findById(userId);
     let binancePortfolio = [];
     let coindcxPortfolio = [];
 

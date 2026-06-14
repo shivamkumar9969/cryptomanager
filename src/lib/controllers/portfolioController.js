@@ -5,7 +5,7 @@ import binanceService from '../services/binanceService';
 import coindcxService from '../services/coindcxService';
 import { decrypt } from '../services/encryptionService';
 
-export const getBinanceBalances = async (req, { params } = {}) => {
+export const getBinanceBalances = async (req) => {
   await dbConnect();
   try {
     const userId = req.user.id;
@@ -26,7 +26,7 @@ export const getBinanceBalances = async (req, { params } = {}) => {
   }
 };
 
-export const getCoinDCXBalances = async (req, { params } = {}) => {
+export const getCoinDCXBalances = async (req) => {
   await dbConnect();
   try {
     const userId = req.user.id;
@@ -47,7 +47,7 @@ export const getCoinDCXBalances = async (req, { params } = {}) => {
   }
 };
 
-export const getAllBalances = async (req, { params } = {}) => {
+export const getAllBalances = async (req) => {
   await dbConnect();
   try {
     const userId = req.user.id;

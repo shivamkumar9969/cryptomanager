@@ -10,7 +10,7 @@ import coindcxService  from '../services/coindcxService';
  * Save API keys after validating them by calling the exchange.
  * Body may contain binanceApiKey/binanceApiSecret and/or coindcxApiKey/coindcxApiSecret
  */
-export const saveExchangeKeys = async (req, { params } = {}) => {
+export const saveExchangeKeys = async (req) => {
   await dbConnect();
   try {
     let { binanceApiKey, binanceApiSecret, coindcxApiKey, coindcxApiSecret } = await req.json();
@@ -51,7 +51,7 @@ export const saveExchangeKeys = async (req, { params } = {}) => {
  * Fetch balances from exchanges using the stored (decrypted) credentials.
  * Query params: ?exchange=binance|coindcx or omit to fetch both
  */
-export const getBalances = async (req, { params } = {}) => {
+export const getBalances = async (req) => {
   await dbConnect();
   try {
     const exchange = req.query.exchange; // optional

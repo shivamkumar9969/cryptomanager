@@ -113,7 +113,7 @@ export const getMe = async (req) => {
     if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
     return NextResponse.json({ user });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 };

@@ -193,7 +193,7 @@ class CoindcxAdapter extends ExchangeAdapter {
       const res = await axios.get(`${COINDCX_BASE_URL}/exchange/ticker`);
       const ticker = res.data.find(t => t.market.toUpperCase() === symbol.toUpperCase());
       return ticker ? parseFloat(ticker.last_price) : null;
-    } catch (err) {
+    } catch {
       return null;
     }
   }
@@ -209,7 +209,7 @@ class CoindcxAdapter extends ExchangeAdapter {
         }
       });
       return map;
-    } catch (err) {
+    } catch {
       return {};
     }
   }

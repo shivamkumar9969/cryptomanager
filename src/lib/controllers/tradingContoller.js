@@ -50,7 +50,7 @@ const fetchCoinDCXPrices = async () => {
 
 
 // Controller: getPrices
-export const getPrices = async (req, { params } = {}) => {
+export const getPrices = async (req) => {
   await dbConnect();
   const exchange = req.query.exchange;
   console.log('getPrices called for exchange:', exchange);

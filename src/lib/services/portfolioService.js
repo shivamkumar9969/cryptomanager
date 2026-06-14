@@ -11,7 +11,7 @@ const dbConnect = require('../dbConnect');
 /**
  * Instantiate the correct exchange adapter based on exchangeName
  */
-function getAdapter(exchangeName, apiKey, apiSecret, passphrase) {
+function getAdapter(exchangeName, apiKey, apiSecret) {
   switch (exchangeName.toLowerCase()) {
     case 'binance':
       return new BinanceAdapter(apiKey, apiSecret);
@@ -48,9 +48,8 @@ async function getUnifiedPortfolio(userId, currency = 'USDT') {
     try {
       const apiKey = decrypt(keyObj.apiKey);
       const apiSecret = decrypt(keyObj.apiSecret);
-      const passphrase = keyObj.passphrase ? decrypt(keyObj.passphrase) : null;
 
-      const adapter = getAdapter(keyObj.exchangeName, apiKey, apiSecret, passphrase);
+      const adapter = getAdapter(keyObj.exchangeName, apiKey, apiSecret);
       
       const portfolio = await adapter.getPortfolio(currency);
       

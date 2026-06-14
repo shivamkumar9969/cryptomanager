@@ -18,12 +18,14 @@ export default function Navbar() {
   const currencyRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const isLoggedIn = !!token;
-
+  const [isMounted, setIsMounted] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState("USDT");
 
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const isLoggedIn = isMounted && !!token;
+
   useEffect(() => {
+    setIsMounted(true);
     const savedCurrency = localStorage.getItem("currency");
     if (savedCurrency) setSelectedCurrency(savedCurrency);
   }, []);

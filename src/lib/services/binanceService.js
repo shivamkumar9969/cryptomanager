@@ -2,7 +2,6 @@
 
 const axios = require('axios');
 const crypto = require('crypto');
-const User = require('../models/User');
 const BINANCE_BASE_URL = 'https://api.binance.com';
 
 // Maps crypto symbols to CoinGecko IDs for price fetch
@@ -26,20 +25,6 @@ async function getPriceUSD(symbol) {
   }
 }
 
-// Converts USDT to any target fiat using CoinGecko
-async function getFiatConversion(base = 'USDT', to = 'INR') {
-  try {
-    if (base === to) return 1;
-    // CoinGecko uses lower case fiat currency names for vs_currencies param
-    // Uses tether (USDT) as bridge for most crypto
-    const res = await axios.get(
-      `https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=${to.toLowerCase()}`
-    );
-    return res.data['tether']?.[to.toLowerCase()] || 0;
-  } catch {
-    return 0;
-  }
-}
 
 function signQuery(queryString, secret) {
   return crypto.createHmac('sha256', secret).update(queryString).digest('hex');

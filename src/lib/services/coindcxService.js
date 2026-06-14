@@ -146,8 +146,6 @@ async function getPortfolioValueForUser(apiKey, apiSecret, selectedCurrency = "U
       httpsAgent: agent,
     });
     const balances = res.data || [];
-    const marketsRes = await axios.get(`${COINDCX_BASE_URL}/exchange/v1/markets_details`);
-    const marketDetails = marketsRes.data;
     const tickersRes = await axios.get(`${COINDCX_BASE_URL}/exchange/ticker`);
     const priceMap = {};
     for (const t of tickersRes.data) {

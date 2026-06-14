@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../dbConnect';
-import Order from '../models/Order';
 import Trade from '../models/Trade';
 import jwt from 'jsonwebtoken';
 

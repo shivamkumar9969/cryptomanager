@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../dbConnect';
 import Support from '../models/support';
 
-export const saveSupport = async (req, { params } = {}) => {
+export const saveSupport = async (req) => {
   await dbConnect();
   try {
     let { contactForm } = await req.json();

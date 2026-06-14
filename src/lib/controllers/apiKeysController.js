@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../dbConnect';
-import User from "../models/User";
 import ExchangeKey from "../models/ExchangeKey";
 import { encrypt, decrypt } from "../services/encryptionService";
 
@@ -10,7 +9,7 @@ function maskKey(key) {
   return `****${key.slice(-4)}`;
 }
 
-export const getApiKeys = async (req, { params } = {}) => {
+export const getApiKeys = async (req) => {
   await dbConnect();
   try {
     const keys = await ExchangeKey.find({ userId: req.user.id });
@@ -18,7 +17,7 @@ export const getApiKeys = async (req, { params } = {}) => {
       let decryptedKey = '';
       try {
         decryptedKey = decrypt(k.apiKey);
-      } catch (err) {
+      } catch {
         decryptedKey = 'error';
       }
       return {
@@ -35,7 +34,7 @@ export const getApiKeys = async (req, { params } = {}) => {
   }
 };
 
-export const addApiKey = async (req, { params } = {}) => {
+export const addApiKey = async (req) => {
   await dbConnect();
   try {
     let { exchange, apiKey, apiSecret } = await req.json();

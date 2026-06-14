@@ -171,7 +171,7 @@ class BinanceAdapter extends ExchangeAdapter {
         params: { symbol: symbol.toUpperCase() }
       });
       return parseFloat(res.data.price);
-    } catch (err) {
+    } catch {
       return null;
     }
   }
@@ -184,7 +184,7 @@ class BinanceAdapter extends ExchangeAdapter {
       const map = {};
       res.data.forEach(t => { map[t.symbol] = parseFloat(t.price); });
       return map;
-    } catch (err) {
+    } catch {
       return {};
     }
   }

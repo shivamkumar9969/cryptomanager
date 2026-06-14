@@ -2,8 +2,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
 const SECTIONS = ["Profile", "Change Password", "Preferences"] as const;
 type Section = typeof SECTIONS[number];
 

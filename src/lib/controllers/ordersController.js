@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../dbConnect';
-import User from "../models/User";
 import ExchangeKey from "../models/ExchangeKey";
 import binanceService from "../services/binanceService";
 import coindcxService from "../services/coindcxService";
 import { decrypt } from "../services/encryptionService";
 
-export const placeOrder = async (req, { params } = {}) => {
+export const placeOrder = async (req) => {
   await dbConnect();
   try {
     let { exchange, symbol, side, type, price, quantity } = await req.json();
@@ -46,7 +45,7 @@ export const placeOrder = async (req, { params } = {}) => {
   }
 };
 
-export const getOrders = async (req, { params } = {}) => {
+export const getOrders = async (req) => {
   await dbConnect();
   try {
     const { searchParams } = new URL(req.url);
@@ -83,7 +82,7 @@ export const getOrders = async (req, { params } = {}) => {
   }
 };
 
-export const cancelOrder = async (req, { params } = {}) => {
+export const cancelOrder = async (req) => {
   await dbConnect();
   try {
     let { exchange, symbol, orderId } = await req.json();

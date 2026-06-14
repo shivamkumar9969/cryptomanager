@@ -19,7 +19,7 @@ async function getCoinDCXUserInfo(apiKey, apiSecret) {
   }
 }
 
-export const getProfile = async (req, { params } = {}) => {
+export const getProfile = async (req) => {
   await dbConnect();
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -42,7 +42,7 @@ export const getProfile = async (req, { params } = {}) => {
 };
 
 // Update profile (name/email)
-export const updateProfile = async (req, { params } = {}) => {
+export const updateProfile = async (req) => {
   await dbConnect();
   try {
     let { name, email } = await req.json();
@@ -60,7 +60,7 @@ export const updateProfile = async (req, { params } = {}) => {
 };
 
 // Change password
-export const changePassword = async (req, { params } = {}) => {
+export const changePassword = async (req) => {
   await dbConnect();
   try {
     let { currentPassword, newPassword } = await req.json();

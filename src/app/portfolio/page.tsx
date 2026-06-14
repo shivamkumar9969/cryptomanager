@@ -45,12 +45,9 @@ export default function PortfolioPage() {
     EUR: "€ ",
     BTC: "₿ ",
   };
-  const currencyCode =
-    typeof window !== "undefined" && localStorage.getItem("currency")
-      ? localStorage.getItem("currency")!.toUpperCase()
-      : "USD";
+  const [currencyCode, setCurrencyCode] = useState("USD");
   const currencySymbol = currencySymbolMap[currencyCode] || currencyCode;
-  const numberFormatter = new Intl.NumberFormat(undefined, {
+  const numberFormatter = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 8,
   });
   const formatCurrency = (amount: number) =>
@@ -69,6 +66,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const selectedCurrency = localStorage.getItem("currency") || "USDT";
+    setCurrencyCode(selectedCurrency.toUpperCase());
     if (!token) {
       window.location.href = "/login";
       return;

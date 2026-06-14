@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../dbConnect';
 import User from "../models/User";
 
-export const getSettings = async (req, { params } = {}) => {
+export const getSettings = async (req) => {
   await dbConnect();
   try {
     const user = await User.findById(req.user.id).select("settings");
@@ -14,7 +14,7 @@ export const getSettings = async (req, { params } = {}) => {
   }
 };
 
-export const updateSettings = async (req, { params } = {}) => {
+export const updateSettings = async (req) => {
   await dbConnect();
   try {
     let { twoFactorAuth, theme } = await req.json();

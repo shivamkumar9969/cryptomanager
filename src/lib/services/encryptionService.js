@@ -11,7 +11,6 @@ const key = crypto.createHash('sha256').update(String(ENCRYPTION_SECRET)).digest
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SALT_LENGTH = 64;
-const TAG_LENGTH = 16;
 
 /**
  * Encrypts plaintext using AES-256-GCM.

@@ -49,7 +49,7 @@ async function sendNotification(userId, payload, prefKey = null) {
     if (!user) return false;
 
     // 1. Always create In-App Notification (unless user disabled entirely)
-    const notification = await Notification.create({
+    await Notification.create({
       userId,
       title: payload.title,
       message: payload.message,

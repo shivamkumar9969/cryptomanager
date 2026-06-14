@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../dbConnect';
 import Alert from '../models/Alert';
-import Notification from '../models/Notification';
 import jwt from 'jsonwebtoken';
 
 function getUserId(req) {

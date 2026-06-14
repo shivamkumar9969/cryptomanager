@@ -26,41 +26,41 @@ class ExchangeAdapter {
    * @param {string} currency - 'USDT', 'INR', 'USD'
    * @returns {Promise<Array>} Array of { asset, quantity, price, value }
    */
-  async getPortfolio(currency = 'USDT') { throw new Error('Not implemented'); }
+  async getPortfolio(_currency = 'USDT') { throw new Error('Not implemented'); }
 
   /**
    * Place an order on the exchange
    * @param {object} params - { symbol, side, type, quantity, price }
    * @returns {Promise<object>} Standardized order object
    */
-  async placeOrder(params) { throw new Error('Not implemented'); }
+  async placeOrder(_params) { throw new Error('Not implemented'); }
 
   /**
    * Cancel an open order
    * @param {string} symbol - Trading pair
    * @param {string} orderId - Exchange order ID
    */
-  async cancelOrder(symbol, orderId) { throw new Error('Not implemented'); }
+  async cancelOrder(_symbol, _orderId) { throw new Error('Not implemented'); }
 
   /**
    * Get all open/recent orders
    * @param {string} symbol - Optional filter
    */
-  async getOrders(symbol = null) { throw new Error('Not implemented'); }
+  async getOrders(_symbol = null) { throw new Error('Not implemented'); }
 
   /**
    * Get current ticker price
    * @param {string} symbol - Trading pair e.g. "BTCUSDT"
    * @returns {Promise<number>} Current price
    */
-  async getTicker(symbol) { throw new Error('Not implemented'); }
+  async getTicker(_symbol) { throw new Error('Not implemented'); }
 
   /**
    * Get multiple ticker prices
    * @param {Array<string>} symbols 
    * @returns {Promise<object>} Map of { [symbol]: price }
    */
-  async getTickers(symbols) { throw new Error('Not implemented'); }
+  async getTickers(_symbols) { throw new Error('Not implemented'); }
 }
 
 module.exports = ExchangeAdapter;

@@ -22,7 +22,6 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeExchange, setActiveExchange] = useState("All");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const exchangesList = ["All", "Binance", "CoinDCX"];
 
@@ -66,13 +65,8 @@ export default function OrdersPage() {
           allOrders = res.data;
         }
         setOrders(allOrders);
-      } catch (err) {
+      } catch {
         setOrders([]);
-        if (axios.isAxiosError(err)) {
-          setError((err.response?.data as { message?: string })?.message || "Fetch Order Failed");
-        } else {
-          setError("Fetch Order Failed");
-        }
       } finally {
         setLoading(false);
       }

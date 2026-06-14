@@ -4,7 +4,7 @@ import dbConnect from '../dbConnect';
 import Notification  from "../models/Notification";
 
 // Fetch all notifications for the logged-in user
-export const getNotifications = async (req, { params } = {}) => {
+export const getNotifications = async (req) => {
   await dbConnect();
   try {
     const notifications = await Notification.find({ userId: req.user.id })
@@ -17,7 +17,7 @@ export const getNotifications = async (req, { params } = {}) => {
 };
 
 // Get count of unread notifications
-export const getUnreadCount = async (req, { params } = {}) => {
+export const getUnreadCount = async (req) => {
   await dbConnect();
   try {
     const count = await Notification.countDocuments({ 
@@ -32,7 +32,7 @@ export const getUnreadCount = async (req, { params } = {}) => {
 };
 
 // Mark all notifications as read
-export const markAllRead = async (req, { params } = {}) => {
+export const markAllRead = async (req) => {
   await dbConnect();
   try {
     await Notification.updateMany(
